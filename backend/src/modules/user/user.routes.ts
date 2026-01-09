@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { requireAuth } from '@clerk/express';
 import { UserController } from './user.controller';
+import { requireAuthenticated } from '../../shared/middleware/requireAuth';
 
 export function createUserRoutes(controller: UserController): Router {
   const router = Router();
 
-  router.get('/me', requireAuth(), controller.getMe);
+  router.get('/me', requireAuthenticated, controller.getMe);
 
   return router;
 }

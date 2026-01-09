@@ -1,5 +1,25 @@
 import { Product } from "./entities/Product";
 
+export interface CreateProductDto {
+  name: string;
+  description?: string;
+  price: number;
+  stock?: number;
+  imageUrl?: string;
+  categoryId: number;
+  isActive?: boolean;
+}
+
+export interface UpdateProductDto {
+  name?: string;
+  description?: string;
+  price?: number;
+  stock?: number;
+  imageUrl?: string;
+  categoryId?: number;
+  isActive?: boolean;
+}
+
 export interface ProductQueryParams {
   page?: number;
   limit?: number;
@@ -19,8 +39,8 @@ export interface PaginatedResult<T> {
 }
 export interface IProductService {
   getAllProducts(params?: ProductQueryParams): Promise<PaginatedResult<Product>>;
-  // getProductById(id: number): Promise<Product | null>;
-  // createProduct(data: any): Promise<any>;
-  // updateProduct(id: string, data: any): Promise<any>;
-  // deleteProduct(id: string): Promise<void>;
+  getProductById(id: number): Promise<Product | null>;
+  createProduct(data: CreateProductDto): Promise<any>;
+  updateProduct(id: number, data: UpdateProductDto): Promise<Product | null>;
+  deleteProduct(id: number): Promise<boolean>;
 }

@@ -7,6 +7,7 @@ import { clerkMiddleware } from "@clerk/express";
 import { createContainer } from "./container";
 import { createUserRoutes } from "./modules/user/user.routes";
 import { createProductRoutes } from "./modules/product/product.routes";
+import { errorHandler } from "./shared/middleware/errorHandler";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -23,6 +24,8 @@ AppDataSource.initialize()
 
     app.use("/api/users", createUserRoutes(container.userController));
     app.use("/api/products", createProductRoutes(container.productController));
+
+    app.use(errorHandler)
 
     app.listen(PORT, () => {
       console.log(`Server is running on http://localhost:${PORT}`);
