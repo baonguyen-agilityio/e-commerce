@@ -1,34 +1,38 @@
-import { Request, Response } from 'express';
-import { getAuth } from '@clerk/express';
-import { IUserService } from './user.interface';
+import { Request, Response } from "express";
+import { IUserService } from "./user.interface";
+import { asyncHandler } from "../../shared/middleware/asyncHandler";
 
 export class UserController {
   constructor(private readonly userService: IUserService) {}
 
-  getMe = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const auth = getAuth(req);
+  getMe = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const auth = req.auth!;
 
-      if (!auth.userId) {
-        res.status(401).json({ error: 'Unauthorized' });
+    if (!auth.userId) {
+      return;
+    }
+
+    const email = (auth.sessionClaims.email as string) || "";
+    const name = (auth.sessionClaims.name as string) || "";
+
+    const user = await this.userService.findOrCreate({
+      clerkId: auth.userId,
+      email,
+      name,
+    });
+
+    res.json(user);
+  });
+
+  setAdmin = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const { clerkId } = req.params;
+      if (!clerkId) {
+        res.status(400).json({ error: "clerkId parameter is required" });
         return;
       }
-
-      const email = (auth.sessionClaims?.email as string) || '';
-      const name = (auth.sessionClaims?.name as string) || '';
-
-      const user = await this.userService.findOrCreate({
-        clerkId: auth.userId,
-        email,
-        name,
-      });
-
+      const user = await this.userService.setAdmin(clerkId);
       res.json(user);
-    } catch (error) {
-      console.error('Get user error:', error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  };
+    },
+  );
 }
-
-

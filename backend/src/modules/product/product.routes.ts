@@ -2,8 +2,8 @@ import { Router } from "express";
 import { ProductController } from "./product.controller";
 import { validate } from "../../shared/middleware/validate";
 import { createProductSchema, updateProductSchema } from "./product.validation";
-import { requireAuthenticated } from "../../shared/middleware/requireAuth";
-import { adminOnly } from "../../shared/middleware/adminOnly";
+import { requireAuth } from "../../shared/middleware/requireAuth";
+import { UserRole } from "../user/entities/User";
 
 export function createProductRoutes(controller: ProductController): Router {
   const router = Router();
@@ -14,22 +14,19 @@ export function createProductRoutes(controller: ProductController): Router {
   // admin routes
   router.post(
     "/",
-    requireAuthenticated,
-    adminOnly,
+    requireAuth(UserRole.ADMIN),
     validate(createProductSchema),
     controller.createProduct,
   );
   router.put(
     "/:id",
-    requireAuthenticated,
-    adminOnly,
+    requireAuth(UserRole.ADMIN),
     validate(updateProductSchema),
     controller.updateProduct,
   );
   router.delete(
     "/:id",
-    requireAuthenticated,
-    adminOnly,
+    requireAuth(UserRole.ADMIN),
     controller.deleteProduct,
   );
   return router;

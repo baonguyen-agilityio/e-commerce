@@ -1,3 +1,4 @@
+import { PaginatedResult } from "../../shared/types/pagination";
 import { Product } from "./entities/Product";
 
 export interface CreateProductDto {
@@ -29,13 +30,6 @@ export interface ProductQueryParams {
   maxPrice?: number;
   sort?: 'name' | 'price' | 'createdAt';
   order?: 'ASC' | 'DESC';
-}
-export interface PaginatedResult<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
 }
 export interface IProductService {
   getAllProducts(params?: ProductQueryParams): Promise<PaginatedResult<Product>>;

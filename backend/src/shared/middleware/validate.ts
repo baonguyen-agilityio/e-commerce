@@ -6,8 +6,7 @@ export const validate = (schema: ZodType) => {
     const result = schema.safeParse(req.body);
 
     if (!result.success) {
-
-        console.log(result.error);
+      console.log(result.error);
       const errors = result.error.issues.map((issue) => ({
         field: issue.path.join("."),
         message: issue.message,

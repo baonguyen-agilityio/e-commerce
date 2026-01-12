@@ -8,6 +8,8 @@ import { createContainer } from "./container";
 import { createUserRoutes } from "./modules/user/user.routes";
 import { createProductRoutes } from "./modules/product/product.routes";
 import { errorHandler } from "./shared/middleware/errorHandler";
+import { createCategoryRoutes } from "./modules/category/category.routes";
+import { createCartRoutes } from "./modules/cart/cart.routes";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,8 +26,13 @@ AppDataSource.initialize()
 
     app.use("/api/users", createUserRoutes(container.userController));
     app.use("/api/products", createProductRoutes(container.productController));
+    app.use(
+      "/api/categories",
+      createCategoryRoutes(container.categoryController),
+    );
+    app.use("/api/cart", createCartRoutes(container.cartController));
 
-    app.use(errorHandler)
+    app.use(errorHandler);
 
     app.listen(PORT, () => {
       console.log(`Server is running on http://localhost:${PORT}`);

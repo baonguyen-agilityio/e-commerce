@@ -3,11 +3,11 @@ import { Product } from "./entities/Product";
 import {
   CreateProductDto,
   IProductService,
-  PaginatedResult,
   ProductQueryParams,
   UpdateProductDto,
 } from "./product.interface";
 import { AppError } from "../../shared/middleware/errorHandler";
+import { PaginatedResult } from "../../shared/types/pagination";
 
 export class ProductService implements IProductService {
   constructor(private readonly productRepository: Repository<Product>) {}
@@ -24,7 +24,9 @@ export class ProductService implements IProductService {
       page = 1,
       limit = 10,
     } = params;
-    const queryBuilder = this.productRepository.createQueryBuilder("product");
+    const queryBuilder = this.productRepository
+      .createQueryBuilder("product")
+      .leftJoinAndSelect("product.category", "category");
 
     if (search) {
       queryBuilder.andWhere(
@@ -58,12 +60,15 @@ export class ProductService implements IProductService {
     };
   }
 
-  async getProductById(id: number): Promise<Product | null> {
-    const existingProduct = await this.productRepository.findOneBy({ id });
+  async getProductById(id: number): Promise<Product> {
+    const existingProduct = await this.productRepository.findOne({
+      where: { id },
+      relations: ["category"],
+    });
     if (!existingProduct) {
       throw new AppError(404, "Product not found");
     }
-    return await this.productRepository.findOneBy({ id });
+    return existingProduct;
   }
 
   async createProduct(data: CreateProductDto): Promise<Product> {
@@ -85,10 +90,7 @@ export class ProductService implements IProductService {
     id: number,
     data: UpdateProductDto,
   ): Promise<Product | null> {
-    const existingProduct = await this.productRepository.findOneBy({ id });
-    if (!existingProduct) {
-      throw new AppError(404, "Product not found");
-    }
+    const existingProduct = await this.getProductById(id);
 
     Object.assign(existingProduct, data);
     return this.productRepository.save(existingProduct);

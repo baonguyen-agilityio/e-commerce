@@ -8,6 +8,7 @@ export interface CreateUserDto {
 
 export interface IUserService {
   findOrCreate(data: CreateUserDto): Promise<User>;
+  setAdmin(clerkId: string): Promise<User | null>;
 }
 
 
