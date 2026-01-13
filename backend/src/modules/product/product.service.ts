@@ -7,7 +7,7 @@ import {
   UpdateProductDto,
 } from "./product.interface";
 import { AppError } from "../../shared/middleware/errorHandler";
-import { PaginatedResult } from "../../shared/types/pagination";
+import { PaginatedResult } from "../../shared/interfaces/pagination";
 
 export class ProductService implements IProductService {
   constructor(private readonly productRepository: Repository<Product>) {}

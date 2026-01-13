@@ -30,7 +30,7 @@ export class CartService implements ICartService {
 
   async getCartByClerkId(clerkId: string): Promise<CartWithTotal> {
     const user = await this.userRepository.findOne({
-      where: { clerkId: clerkId },
+      where: { clerkId },
     });
     if (!user) {
       throw new AppError(404, "Cart not found");
@@ -55,7 +55,7 @@ export class CartService implements ICartService {
 
   async addItemToCart(clerkId: string, productId: number, quantity: number = 1): Promise<CartItem | null> {
     const user = await this.userRepository.findOne({
-      where: { clerkId: clerkId },
+      where: { clerkId },
     });
     if (!user) {
       throw new AppError(404, "Cart not found");
@@ -98,5 +98,77 @@ export class CartService implements ICartService {
       where: { id: cartItem.id },
       relations: ['product'],
     });
+  }
+
+  async updateItemQuantity(
+    clerkId: string,
+    cartItemId: number,
+    quantity: number,
+  ): Promise<CartItem | null> {
+    const user = await this.userRepository.findOne({
+      where: { clerkId },
+    });
+    if (!user) {
+      throw new AppError(404, "Cart not found");
+    }
+
+    const cart = await this.getOrCreateCart(user.id);
+
+    const cartItem = await this.cartItemRepository.findOne({
+      where: { id: cartItemId, cartId: cart.id },
+      relations: ["product"],
+    });
+
+    if (!cartItem) {
+      throw new AppError(404, "Cart item not found");
+    }
+
+    if (quantity <= 0) {
+      await this.cartItemRepository.delete(cartItem);
+      return null;
+    }
+
+    if (cartItem.product.stock < quantity) {
+      throw new AppError(400, "Insufficient stock for the requested product");
+    }
+
+    cartItem.quantity = quantity;
+    return this.cartItemRepository.save(cartItem);
+  }
+
+  async removeItemFromCart(clerkId: string, cartItemId: number): Promise<boolean> {
+    const user = await this.userRepository.findOne({
+      where: { clerkId },
+    });
+    if (!user) {
+      throw new AppError(404, "Cart not found");
+    }
+
+    const cart = await this.getOrCreateCart(user.id);
+
+    const cartItem = await this.cartItemRepository.findOne({
+      where: { id: cartItemId, cartId: cart.id },
+    });
+
+    if (!cartItem) {
+      throw new AppError(404, "Cart item not found");
+    }
+
+    await this.cartItemRepository.delete(cartItem);
+    return true;
+  }
+
+  async clearCart(clerkId: string): Promise<boolean> {
+    const user = await this.userRepository.findOne({
+      where: { clerkId },
+    });
+    if (!user) {
+      throw new AppError(404, "Cart not found");
+    }
+
+    const cart = await this.getOrCreateCart(user.id);
+
+    await this.cartItemRepository.delete({ cartId: cart.id });
+    return true;
   }
 }

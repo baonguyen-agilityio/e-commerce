@@ -1,4 +1,4 @@
-import { PaginatedResult } from "../../shared/types/pagination";
+import { PaginatedResult } from "../../shared/interfaces/pagination";
 import { Category } from "./entities/Category";
 
 export interface CreateCategoryDto {

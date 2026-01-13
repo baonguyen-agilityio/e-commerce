@@ -12,12 +12,17 @@ import { Cart } from "./modules/cart/entities/Cart";
 import { CartService } from "./modules/cart/cart.service";
 import { CartController } from "./modules/cart/cart.controller";
 import { CartItem } from "./modules/cart/entities/CartItem";
+import { Order } from "./modules/order/entities/Order";
+import { OrderService } from "./modules/order/order.service";
+import { OrderController } from "./modules/order/order.controller";
+import { OrderItem } from "./modules/order/entities/OrderItem";
 
 export interface Container {
   userController: UserController;
   productController: ProductController;
   categoryController: CategoryController;
   cartController: CartController;
+  orderController: OrderController;
 }
 export function createContainer(dataSource: DataSource): Container {
   const userRepository = dataSource.getRepository(User);
@@ -42,10 +47,23 @@ export function createContainer(dataSource: DataSource): Container {
   );
   const cartController = new CartController(cartService);
 
+  const orderRepository = dataSource.getRepository(Order);
+  const orderItemRepository = dataSource.getRepository(OrderItem);
+  const orderService = new OrderService(
+    orderRepository,
+    orderItemRepository,
+    userRepository,
+    cartRepository,
+    cartItemRepository,
+    productRepository,
+  );
+  const orderController = new OrderController(orderService);
+
   return {
     userController,
     productController,
     categoryController,
     cartController,
+    orderController
   };
 }

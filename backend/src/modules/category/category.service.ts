@@ -2,7 +2,7 @@ import { Repository } from "typeorm";
 import { CreateCategoryDto, ICategoryService, UpdateCategoryDto } from "./category.interface";
 import { Category } from "./entities/Category";
 import { AppError } from "../../shared/middleware/errorHandler";
-import { PaginatedResult } from "../../shared/types/pagination";
+import { PaginatedResult } from "../../shared/interfaces/pagination";
 
 export class CategoryService implements ICategoryService {
   constructor(private readonly categoryRepository: Repository<Category>) {}

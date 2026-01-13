@@ -10,6 +10,7 @@ import { createProductRoutes } from "./modules/product/product.routes";
 import { errorHandler } from "./shared/middleware/errorHandler";
 import { createCategoryRoutes } from "./modules/category/category.routes";
 import { createCartRoutes } from "./modules/cart/cart.routes";
+import { createOrderRoutes } from "./modules/order/order.routes";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -31,6 +32,7 @@ AppDataSource.initialize()
       createCategoryRoutes(container.categoryController),
     );
     app.use("/api/cart", createCartRoutes(container.cartController));
+    app.use("/api/orders", createOrderRoutes(container.orderController));
 
     app.use(errorHandler);
 
