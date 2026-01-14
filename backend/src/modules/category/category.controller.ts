@@ -44,8 +44,8 @@ export class CategoryController {
   deleteCategory = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const id = parseInt(req.params.id, 10);
-      await this.categoryService.deleteCategory(id);
-      res.status(204).send();
+      const deleted = await this.categoryService.deleteCategory(id);
+      res.status(200).json(deleted);
     },
   );
 }

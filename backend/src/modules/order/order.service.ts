@@ -8,6 +8,7 @@ import Stripe from "stripe";
 import { CartItem } from "../cart/entities/CartItem";
 import { OrderItem } from "./entities/OrderItem";
 import { Product } from "../product/entities/Product";
+import { IPaymentGateway } from "../../shared/interfaces/IPaymentGateway";
 
 export class OrderService implements IOrderService {
   private stripe: Stripe;
@@ -18,6 +19,7 @@ export class OrderService implements IOrderService {
     private readonly cartRepository: Repository<Cart>,
     private readonly cartItemRepository: Repository<CartItem>,
     private readonly productRepository: Repository<Product>,
+    private readonly paymentGateway: IPaymentGateway,
   ) {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
   }
@@ -38,32 +40,27 @@ export class OrderService implements IOrderService {
       throw new AppError(400, "Cart is empty");
     }
 
-    const totalCents = cart.items.reduce(
-      (sum, item) => sum + Math.round(item.product.price * 100) * item.quantity,
-      0,
-    );
+    let total = 0;
+    for (const item of cart.items) {
+      total += Number(item.product.price) * item.quantity;
+    }
+    total = Math.round(total * 100) / 100;
 
-    const paymentIntent = await this.stripe.paymentIntents.create({
-      amount: totalCents,
+    const paymentIntent = await this.paymentGateway.processPayment({
+      amount: total,
       currency: "usd",
-      confirm: true,
-      payment_method: "pm_card_visa",
-      automatic_payment_methods: {
-        enabled: true,
-        allow_redirects: "never",
-      },
       description: `Order payment for user ${user.email}`,
     });
 
-    if (paymentIntent.status !== "succeeded") {
-      throw new AppError(400, "Payment failed");
+    if (!paymentIntent.success) {
+      throw new AppError(400, paymentIntent.error || "Payment failed");
     }
 
     const order = this.orderRepository.create({
       userId: user.id,
-      total: totalCents / 100,
+      total: total / 100,
       status: "PAID",
-      paymentId: paymentIntent.id,
+      paymentId: paymentIntent.paymentId,
     });
     await this.orderRepository.save(order);
 
