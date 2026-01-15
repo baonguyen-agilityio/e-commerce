@@ -7,10 +7,28 @@ export function createUserRoutes(controller: UserController): Router {
   const router = Router();
 
   router.get("/me", requireAuth(), controller.getMe);
+  router.get("/", requireAuth(UserRole.STAFF), controller.getAllUsers);
   router.post(
-    "/set-admin/:clerkId",
+    "/change-role/:clerkId",
     requireAuth(UserRole.ADMIN),
-    controller.setAdmin,
+    controller.changeRole,
+  );
+  router.delete(
+    "/:clerkId",
+    requireAuth(UserRole.ADMIN),
+    controller.deleteUser,
+  );
+
+  router.post(
+    "/ban/:clerkId",
+    requireAuth(UserRole.ADMIN),
+    controller.toggleBan,
+  );
+
+  router.post(
+    "/lock/:clerkId",
+    requireAuth(UserRole.ADMIN),
+    controller.toggleLock,
   );
 
   return router;

@@ -17,4 +17,5 @@ export const AppDataSource = new DataSource({
   synchronize: process.env.NODE_ENV !== "production",
   logging: process.env.NODE_ENV === "development",
   entities: [User, Product, Category, Cart, CartItem, Order, OrderItem],
+  migrations: ["src/migrations/*.ts"],
 });

@@ -39,6 +39,8 @@ import {
   Settings2,
   Search,
 } from "lucide-react";
+import { useEffect } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -60,7 +62,15 @@ export function DataTable<TData, TValue>({
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
-
+  const [searchValue, setSearchValue] = React.useState("");
+  const debouncedSearch = useDebounce(searchValue, 500);
+  
+  useEffect(() => {
+    if (searchKey) {
+      table.getColumn(searchKey)?.setFilterValue(debouncedSearch);
+    }
+  }, [debouncedSearch]);
+  
   const table = useReactTable({
     data,
     columns,
@@ -90,11 +100,9 @@ export function DataTable<TData, TValue>({
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 placeholder={searchPlaceholder}
-                value={
-                  (table.getColumn(searchKey)?.getFilterValue() as string) ?? ""
-                }
+                value={searchValue}
                 onChange={(event) =>
-                  table.getColumn(searchKey)?.setFilterValue(event.target.value)
+                  setSearchValue(event.target.value)
                 }
                 className="pl-9 h-10 bg-slate-50 border-slate-200 focus:bg-white focus:border-amber-300 focus:ring-amber-100"
               />

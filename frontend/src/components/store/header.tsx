@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useAuth, UserButton, SignInButton } from "@clerk/nextjs";
-import { ShoppingBag, Search, Menu, Package, Heart } from "lucide-react";
+import {
+  ShoppingBag,
+  Search,
+  Menu,
+  Package,
+  Heart,
+  Shield,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +19,17 @@ import { CartSheet } from "./cart-sheet";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCurrentUser } from "@/hooks/use-user";
-import { UserRole } from "@/types";
+
+const ROLE_LEVELS: Record<string, number> = {
+  customer: 0,
+  staff: 1,
+  admin: 2,
+  super_admin: 3,
+};
+
+function isStaffOrHigher(role: string | undefined): boolean {
+  return (ROLE_LEVELS[role || "customer"] ?? 0) >= ROLE_LEVELS.staff;
+}
 
 export function Header() {
   const { isSignedIn } = useAuth();
@@ -21,7 +38,9 @@ export function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
 
-  const cartItemCount = cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0;
+  const cartItemCount =
+    cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0;
+  const canAccessAdmin = isStaffOrHigher(user?.role);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +55,10 @@ export function Header() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">
           <span className="font-heading text-2xl font-bold tracking-tight text-slate-900 transition-colors">
-            LUXE<span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">.</span>
+            LUXE
+            <span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+              .
+            </span>
           </span>
         </Link>
 
@@ -50,16 +72,19 @@ export function Header() {
           </Link>
           {isSignedIn && (
             <Link
-              href={user?.role === UserRole.ADMIN ? "/admin" : "/orders"}
+              href={canAccessAdmin ? "/admin" : "/orders"}
               className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 hover:after:w-full after:bg-amber-500 after:transition-all after:duration-300"
             >
-              {user?.role === UserRole.ADMIN ? "Go to Admin" : "My Orders"}
+              {canAccessAdmin ? "Go to Admin" : "My Orders"}
             </Link>
           )}
         </nav>
 
         {/* Search Bar - Desktop */}
-        <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-md mx-8">
+        <form
+          onSubmit={handleSearch}
+          className="hidden lg:flex flex-1 max-w-md mx-8"
+        >
           <div className="relative w-full group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-amber-500 transition-colors" />
             <Input
@@ -95,15 +120,16 @@ export function Header() {
               >
                 <ShoppingBag className="h-5 w-5" />
                 {cartItemCount > 0 && (
-                  <Badge
-                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px] bg-amber-500 text-white border-2 border-white font-semibold"
-                  >
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px] bg-amber-500 text-white border-2 border-white font-semibold">
                     {cartItemCount}
                   </Badge>
                 )}
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-full sm:max-w-lg bg-white p-0">
+            <SheetContent
+              side="right"
+              className="w-full sm:max-w-lg bg-white p-0"
+            >
               <CartSheet />
             </SheetContent>
           </Sheet>
@@ -114,7 +140,8 @@ export function Header() {
               afterSignOutUrl="/"
               appearance={{
                 elements: {
-                  avatarBox: "h-10 w-10 ring-2 ring-slate-100 hover:ring-amber-200 transition-all",
+                  avatarBox:
+                    "h-10 w-10 ring-2 ring-slate-100 hover:ring-amber-200 transition-all",
                 },
               }}
             />
@@ -129,7 +156,11 @@ export function Header() {
           {/* Mobile Menu */}
           <Sheet>
             <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon" className="cursor-pointer h-11 w-11 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="cursor-pointer h-11 w-11 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full"
+              >
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
@@ -171,6 +202,17 @@ export function Header() {
                         </div>
                         <span className="font-medium">My Orders</span>
                       </Link>
+                      {canAccessAdmin && (
+                        <Link
+                          href="/admin"
+                          className="flex items-center gap-4 px-4 py-3 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                        >
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100">
+                            <Shield className="h-5 w-5 text-amber-600" />
+                          </div>
+                          <span className="font-medium">Admin Panel</span>
+                        </Link>
+                      )}
                       <Link
                         href="#"
                         className="flex items-center gap-4 px-4 py-3 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"

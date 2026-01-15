@@ -11,8 +11,23 @@ const isPublicRoute = createRouteMatcher([
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
 
+// Role hierarchy check
+const ROLE_LEVELS: Record<string, number> = {
+  customer: 0,
+  staff: 1,
+  admin: 2,
+  super_admin: 3,
+};
+
+function hasMinRole(userRole: string | undefined, minRole: string): boolean {
+  const userLevel = ROLE_LEVELS[userRole || "customer"] ?? 0;
+  const requiredLevel = ROLE_LEVELS[minRole] ?? 0;
+  return userLevel >= requiredLevel;
+}
+
 export default clerkMiddleware(async (auth, request) => {
   const { userId, sessionClaims } = await auth();
+  console.log(sessionClaims)
 
   // Allow public routes
   if (isPublicRoute(request)) {
@@ -26,10 +41,10 @@ export default clerkMiddleware(async (auth, request) => {
     return NextResponse.redirect(signInUrl);
   }
 
-  // Admin routes require admin role
+  // Admin routes require STAFF role or higher
   if (isAdminRoute(request)) {
     const userRole = (sessionClaims?.metadata as { role?: string })?.role;
-    if (userRole !== "admin") {
+    if (!hasMinRole(userRole, "staff")) {
       return NextResponse.redirect(new URL("/", request.url));
     }
   }
@@ -43,4 +58,3 @@ export const config = {
     "/(api|trpc)(.*)",
   ],
 };
-

@@ -1,4 +1,4 @@
-import { User } from './entities/User';
+import { User, UserRole } from './entities/User';
 
 export interface CreateUserDto {
   clerkId: string;
@@ -6,9 +6,20 @@ export interface CreateUserDto {
   name?: string;
 }
 
+export interface ChangeRoleDto {
+  newRole: UserRole;
+  targetClerkId: string;
+  requestingUserClerkId: string;
+  requestingUserRole: UserRole;
+}
+
 export interface IUserService {
   findOrCreate(data: CreateUserDto): Promise<User>;
-  setAdmin(clerkId: string): Promise<User | null>;
+  getAllUsers(): Promise<User[]>;
+  changeRole(changeRoleDto: ChangeRoleDto): Promise<User>;
+  deleteUser(clerkId: string, requestingUserRole: UserRole): Promise<boolean>;
+  toggleBan(clerkId: string, requestingUserRole: UserRole): Promise<User>;
+  toggleLock(clerkId: string, requestingUserRole: UserRole): Promise<User>;
 }
 
 

@@ -8,9 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Package, Shield, RefreshCw, Truck, Sparkles, TrendingUp } from "lucide-react";
 import Link from "next/link";
+import { useCurrentUser } from "@/hooks/use-user";
 
 export default function HomePage() {
   const { data: productsData, isLoading } = useProducts({ limit: 8 });
+  const { data: user } = useCurrentUser();
+
+  console.log(user);
 
   return (
     <div className="bg-slate-50">

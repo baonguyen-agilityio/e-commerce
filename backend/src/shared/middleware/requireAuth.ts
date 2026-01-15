@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import { User, UserRole } from "../../modules/user/entities/User";
+import { hasPermission, User, UserRole } from "../../modules/user/entities/User";
 import { getAuth } from "@clerk/express";
 import { AppDataSource } from "../../config/database";
 
-export const requireAuth = (role?: UserRole) => {
+export const requireAuth = (minRole?: UserRole) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     const auth = getAuth(req);
 
@@ -17,13 +17,13 @@ export const requireAuth = (role?: UserRole) => {
 
     req.auth = { ...auth, userId: auth.userId, role: user?.role };
 
-    if (!role) {
+    if (!minRole) {
       next();
       return;
     }
 
-    if (!user || user.role !== role) {
-      res.status(403).json({ error: `${role} access required` });
+    if (!user || !hasPermission(user.role, minRole)) {
+      res.status(403).json({ message: `${minRole} or higher access required` });
       return;
     }
 

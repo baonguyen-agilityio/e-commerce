@@ -2,14 +2,18 @@
 export enum UserRole {
   CUSTOMER = "customer",
   ADMIN = "admin",
+  STAFF = "staff",
+  SUPER_ADMIN = "super_admin",
 }
 
 export interface User {
   id: number;
   clerkId: string;
   email: string;
-  name: string | null;
+  name: string;
   role: UserRole;
+  isBanned: boolean;
+  isLocked: boolean;
   createdAt: string;
 }
 

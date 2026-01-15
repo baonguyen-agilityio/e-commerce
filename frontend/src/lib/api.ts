@@ -158,10 +158,27 @@ class ApiClient {
     return this.fetch<User>("/users/me");
   }
 
-  async setAdmin(clerkId: string): Promise<User> {
-    return this.fetch<User>(`/users/set-admin/${clerkId}`, {
+  async getAllUsers(): Promise<User[]> {
+    return this.fetch<User[]>("/users");
+  }
+
+  async changeRole(clerkId: string, role: string): Promise<User> {
+    return this.fetch<User>(`/users/change-role/${clerkId}`, {
       method: "POST",
+      body: JSON.stringify({ role }),
     });
+  }
+
+  async deleteUser(clerkId: string): Promise<void> {
+    await this.fetch<void>(`/users/${clerkId}`, { method: "DELETE" });
+  }
+
+  async toggleBan(clerkId: string): Promise<User> {
+    return this.fetch<User>(`/users/ban/${clerkId}`, { method: "POST" });
+  }
+
+  async toggleLock(clerkId: string): Promise<User> {
+    return this.fetch<User>(`/users/lock/${clerkId}`, { method: "POST" });
   }
 }
 
