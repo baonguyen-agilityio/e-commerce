@@ -109,9 +109,9 @@ export function CartSheet() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="p-6 border-b border-slate-200">
+      <div className="p-6 border-b border-slate-200 flex-shrink-0">
         <SheetTitle className="font-heading text-2xl text-slate-900">
           Shopping Cart
           <span className="ml-2 text-base font-normal text-slate-500">
@@ -121,7 +121,7 @@ export function CartSheet() {
       </div>
 
       {/* Cart Items */}
-      <ScrollArea className="flex-1 px-6">
+      <ScrollArea className="flex-1 px-6 min-h-0">
         <div className="space-y-4 py-6">
           {cart.items.map((item) => (
             <div key={item.id} className="flex gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 group hover:border-slate-200 transition-colors">
@@ -198,7 +198,7 @@ export function CartSheet() {
       </ScrollArea>
 
       {/* Footer */}
-      <div className="border-t border-slate-200 p-6 space-y-4 bg-white">
+      <div className="border-t border-slate-200 p-6 space-y-4 bg-white flex-shrink-0">
         {/* Free Shipping Notice */}
         {subtotal < 100 && (
           <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">

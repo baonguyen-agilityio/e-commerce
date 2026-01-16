@@ -42,8 +42,22 @@ import {
   Star,
   UserCog,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
-const ROLE_CONFIG: Record<UserRole, { label: string; icon: React.ReactNode; color: string }> = {
+const ROLE_CONFIG: Record<
+  UserRole,
+  { label: string; icon: React.ReactNode; color: string }
+> = {
   [UserRole.CUSTOMER]: {
     label: "Customer",
     icon: <UserCircle className="h-4 w-4" />,
@@ -98,10 +112,14 @@ export default function AdminUsersPage() {
   };
 
   // Stats
-  const superAdminCount = users.filter((u) => u.role === UserRole.SUPER_ADMIN).length;
+  const superAdminCount = users.filter(
+    (u) => u.role === UserRole.SUPER_ADMIN,
+  ).length;
   const adminCount = users.filter((u) => u.role === UserRole.ADMIN).length;
   const staffCount = users.filter((u) => u.role === UserRole.STAFF).length;
-  const customerCount = users.filter((u) => u.role === UserRole.CUSTOMER).length;
+  const customerCount = users.filter(
+    (u) => u.role === UserRole.CUSTOMER,
+  ).length;
 
   // Helper to check if current user can manage target user
   const canManageUser = (targetUser: User): boolean => {
@@ -115,7 +133,7 @@ export default function AdminUsersPage() {
   const getAvailableRoles = (targetUser: User): UserRole[] => {
     if (!currentUser) return [];
     const currentLevel = ROLE_LEVELS[currentUser.role];
-    
+
     return Object.values(UserRole).filter((role) => {
       if (role === targetUser.role) return false; // Skip current role
       if (role === UserRole.SUPER_ADMIN) return false; // Can't promote to super admin
@@ -133,18 +151,29 @@ export default function AdminUsersPage() {
         const config = ROLE_CONFIG[role];
         return (
           <div className="flex items-center gap-3">
-            <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
-              role === UserRole.SUPER_ADMIN ? "bg-purple-50" :
-              role === UserRole.ADMIN ? "bg-amber-50" :
-              role === UserRole.STAFF ? "bg-blue-50" : "bg-slate-100"
-            }`}>
-              {role === UserRole.SUPER_ADMIN ? <Crown className="h-5 w-5 text-purple-600" /> :
-               role === UserRole.ADMIN ? <ShieldCheck className="h-5 w-5 text-amber-600" /> :
-               role === UserRole.STAFF ? <UserCog className="h-5 w-5 text-blue-600" /> :
-               <UserCircle className="h-5 w-5 text-slate-500" />}
+            <div
+              className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                role === UserRole.SUPER_ADMIN
+                  ? "bg-purple-50"
+                  : role === UserRole.ADMIN
+                  ? "bg-amber-50"
+                  : role === UserRole.STAFF
+                  ? "bg-blue-50"
+                  : "bg-slate-100"
+              }`}
+            >
+              {role === UserRole.SUPER_ADMIN ? (
+                <Crown className="h-5 w-5 text-purple-600" />
+              ) : role === UserRole.ADMIN ? (
+                <ShieldCheck className="h-5 w-5 text-amber-600" />
+              ) : role === UserRole.STAFF ? (
+                <UserCog className="h-5 w-5 text-blue-600" />
+              ) : (
+                <UserCircle className="h-5 w-5 text-slate-500" />
+              )}
             </div>
             <div>
-              <p className="font-medium text-slate-900">
+              <p className="font-medium text-slate-900 capitalize">
                 {row.original.name || "Unnamed User"}
               </p>
               <p className="text-xs text-slate-500 font-mono">
@@ -191,7 +220,11 @@ export default function AdminUsersPage() {
               : "bg-green-50 text-green-700 border-green-200"
           }
         >
-          {row.original.isBanned ? "Banned" : row.original.isLocked ? "Locked" : "Active"}
+          {row.original.isBanned
+            ? "Banned"
+            : row.original.isLocked
+            ? "Locked"
+            : "Active"}
         </Badge>
       ),
     },
@@ -224,18 +257,28 @@ export default function AdminUsersPage() {
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 cursor-pointer">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 cursor-pointer"
+              >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
               {isCurrentUser ? (
-                <DropdownMenuItem disabled className="cursor-not-allowed opacity-50">
+                <DropdownMenuItem
+                  disabled
+                  className="cursor-not-allowed opacity-50"
+                >
                   <UserCircle className="h-4 w-4 mr-2" />
                   This is you
                 </DropdownMenuItem>
               ) : user.role === UserRole.SUPER_ADMIN ? (
-                <DropdownMenuItem disabled className="cursor-not-allowed opacity-50">
+                <DropdownMenuItem
+                  disabled
+                  className="cursor-not-allowed opacity-50"
+                >
                   <Crown className="h-4 w-4 mr-2" />
                   Protected account
                 </DropdownMenuItem>
@@ -254,7 +297,9 @@ export default function AdminUsersPage() {
                           return (
                             <DropdownMenuItem
                               key={role}
-                              onClick={() => handleChangeRole(user.clerkId, role)}
+                              onClick={() =>
+                                handleChangeRole(user.clerkId, role)
+                              }
                               className="cursor-pointer"
                             >
                               {config.icon}
@@ -269,36 +314,107 @@ export default function AdminUsersPage() {
                   <DropdownMenuSeparator />
 
                   {/* Ban/Unban */}
-                  <DropdownMenuItem
-                    onClick={() => handleToggleBan(user.clerkId)}
-                    className={`cursor-pointer ${isBanned ? "text-green-600" : "text-red-600"}`}
-                  >
-                    {isBanned ? <UserCheck className="h-4 w-4 mr-2" /> : <Ban className="h-4 w-4 mr-2" />}
-                    {isBanned ? "Unban User" : "Ban User"}
-                  </DropdownMenuItem>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem
+                        onSelect={(e) => e.preventDefault()}
+                        className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                      >
+                        <Ban className="h-4 w-4 mr-2" />
+                        Ban User
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Ban User</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to ban {user.name || user.email}
+                          ? This will prevent the user from signing in to your
+                          application. This action can be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleToggleBan(user.clerkId)}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          Ban
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
 
                   {/* Lock/Unlock */}
-                  <DropdownMenuItem
-                    onClick={() => handleToggleLock(user.clerkId)}
-                    className={`cursor-pointer ${isLocked ? "text-green-600" : "text-orange-600"}`}
-                  >
-                    {isLocked ? <Unlock className="h-4 w-4 mr-2" /> : <Lock className="h-4 w-4 mr-2" />}
-                    {isLocked ? "Unlock User" : "Lock User"}
-                  </DropdownMenuItem>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem
+                        onSelect={(e) => e.preventDefault()}
+                        className="cursor-pointer text-orange-600 focus:text-orange-600 focus:bg-orange-50"
+                      >
+                        <Lock className="h-4 w-4 mr-2" />
+                        Lock User
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Lock User</AlertDialogTitle>
+                        <AlertDialogDescription className="capitalize">
+                          Are you sure you want to lock <strong>{user.name || user.email}</strong>? This will prevent the user
+                          from signing in to your application. This action can be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleToggleLock(user.clerkId)}
+                          className="bg-orange-600 hover:bg-orange-700"
+                        >
+                          Lock
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
 
                   <DropdownMenuSeparator />
 
                   {/* Delete */}
-                  <DropdownMenuItem
-                    onClick={() => handleDeleteUser(user.clerkId)}
-                    className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete User
-                  </DropdownMenuItem>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem
+                        onSelect={(e) => e.preventDefault()}
+                        className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete User
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete User</AlertDialogTitle>
+                        <AlertDialogDescription className="capitalize">
+                          Are you sure you want to delete <strong>{user.name || user.email}</strong>? This
+                          action cannot be undone and will permanently remove
+                          the user account.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDeleteUser(user.clerkId)}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </>
               ) : (
-                <DropdownMenuItem disabled className="cursor-not-allowed opacity-50">
+                <DropdownMenuItem
+                  disabled
+                  className="cursor-not-allowed opacity-50"
+                >
                   <Shield className="h-4 w-4 mr-2" />
                   No permission
                 </DropdownMenuItem>
@@ -333,7 +449,9 @@ export default function AdminUsersPage() {
               <Crown className="h-6 w-6 text-purple-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold font-mono text-slate-900">{superAdminCount}</p>
+              <p className="text-2xl font-bold font-mono text-slate-900">
+                {superAdminCount}
+              </p>
               <p className="text-sm text-slate-500">Super Admins</p>
             </div>
           </CardContent>
@@ -344,7 +462,9 @@ export default function AdminUsersPage() {
               <ShieldCheck className="h-6 w-6 text-amber-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold font-mono text-slate-900">{adminCount}</p>
+              <p className="text-2xl font-bold font-mono text-slate-900">
+                {adminCount}
+              </p>
               <p className="text-sm text-slate-500">Admins</p>
             </div>
           </CardContent>
@@ -355,7 +475,9 @@ export default function AdminUsersPage() {
               <UserCog className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold font-mono text-slate-900">{staffCount}</p>
+              <p className="text-2xl font-bold font-mono text-slate-900">
+                {staffCount}
+              </p>
               <p className="text-sm text-slate-500">Staff</p>
             </div>
           </CardContent>
@@ -366,7 +488,9 @@ export default function AdminUsersPage() {
               <Users className="h-6 w-6 text-slate-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold font-mono text-slate-900">{customerCount}</p>
+              <p className="text-2xl font-bold font-mono text-slate-900">
+                {customerCount}
+              </p>
               <p className="text-sm text-slate-500">Customers</p>
             </div>
           </CardContent>

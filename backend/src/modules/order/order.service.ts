@@ -1,7 +1,7 @@
 import { Repository } from "typeorm";
 import { Order } from "./entities/Order";
 import { CheckoutResult, IOrderService } from "./order.interface";
-import { User } from "../user/entities/User";
+import { hasPermission, User, UserRole } from "../user/entities/User";
 import { AppError } from "../../shared/middleware/errorHandler";
 import { Cart } from "../cart/entities/Cart";
 import Stripe from "stripe";
@@ -58,7 +58,7 @@ export class OrderService implements IOrderService {
 
     const order = this.orderRepository.create({
       userId: user.id,
-      total: total / 100,
+      total,
       status: "PAID",
       paymentId: paymentIntent.paymentId,
     });
@@ -87,16 +87,8 @@ export class OrderService implements IOrderService {
     return { order: fullOrder!, success: true };
   }
 
-  async getOrders(clerkId: string, role: string): Promise<Order[]> {
+  async getOrdersByUser(clerkId: string): Promise<Order[]> {
     const user = await this.userRepository.findOneBy({ clerkId });
-
-    if (role === "admin") {
-      return this.orderRepository.find({
-        relations: ["items", "items.product", "user"],
-        order: { createdAt: "DESC" },
-      });
-    }
-
     if (!user) {
       throw new AppError(404, "User not found");
     }
@@ -113,7 +105,7 @@ export class OrderService implements IOrderService {
   async getOrderById(
     orderId: number,
     clerkId: string,
-    role: string,
+    role: UserRole,
   ): Promise<Order | null> {
     const order = await this.orderRepository.findOne({
       where: { id: orderId },
@@ -124,7 +116,7 @@ export class OrderService implements IOrderService {
       throw new AppError(404, "Order not found");
     }
 
-    if (role === "admin") {
+    if (hasPermission(role, UserRole.ADMIN)) {
       return order;
     }
 
@@ -134,5 +126,12 @@ export class OrderService implements IOrderService {
     }
 
     return order;
+  }
+
+  async getOrders(): Promise<Order[]> {
+    return this.orderRepository.find({
+        relations: ["items", "items.product", "user"],
+        order: { createdAt: "DESC" },
+      });
   }
 }

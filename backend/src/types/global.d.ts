@@ -5,7 +5,7 @@ declare global {
   namespace Express {
     interface Request {
       auth?: SessionAuthObject & {
-        role?: string;
+        role?: UserRole;
       };
     }
   }

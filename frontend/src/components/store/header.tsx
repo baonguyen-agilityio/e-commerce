@@ -71,12 +71,24 @@ export function Header() {
             All Products
           </Link>
           {isSignedIn && (
-            <Link
-              href={canAccessAdmin ? "/admin" : "/orders"}
-              className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 hover:after:w-full after:bg-amber-500 after:transition-all after:duration-300"
-            >
-              {canAccessAdmin ? "Go to Admin" : "My Orders"}
-            </Link>
+            <>
+              <Link
+                href={"/orders"}
+                className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 hover:after:w-full after:bg-amber-500 after:transition-all after:duration-300"
+              >
+                My Orders
+              </Link>
+              {canAccessAdmin && (
+                <>
+                  <Link
+                    href="/admin"
+                    className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 hover:after:w-full after:bg-amber-500 after:transition-all after:duration-300"
+                  >
+                    Go to Admin
+                  </Link>
+                </>
+              )}
+            </>
           )}
         </nav>
 

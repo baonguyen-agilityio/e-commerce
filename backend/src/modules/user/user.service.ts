@@ -26,7 +26,14 @@ export class UserService implements IUserService {
   }
 
   async getAllUsers(): Promise<User[]> {
-    return this.userRepository.find();
+    const users = await this.userRepository.find();
+    return users.sort((a, b) => {
+      const roleDiff = getRoleLevel(b.role) - getRoleLevel(a.role);
+      if (roleDiff !== 0) {
+        return roleDiff;
+      }
+      return a.createdAt.getTime() - b.createdAt.getTime();
+    });
   }
 
   async changeRole(changeRoleDto: ChangeRoleDto): Promise<User> {
@@ -104,6 +111,9 @@ export class UserService implements IUserService {
 
   async deleteUser(clerkId: string, requestingUserRole: UserRole): Promise<boolean> {
     const user = await this.userRepository.findOne({ where: { clerkId } });
+    const adminCount = await this.userRepository.count({
+        where: { role: UserRole.ADMIN },
+      });
     if (!user) {
       throw new AppError(404, "User not found");
     }
@@ -112,6 +122,9 @@ export class UserService implements IUserService {
     }
     if (getRoleLevel(user.role) >= getRoleLevel(requestingUserRole)) {
       throw new AppError(403, "Cannot delete user with equal or higher role");
+    }
+    if(adminCount <= 1) {
+      throw new AppError(400, "Cannot delete the last Admin. Promote another user first.");
     }
     const deleteUserClerk = await clerkClient.users.deleteUser(clerkId);
     if (!deleteUserClerk) {

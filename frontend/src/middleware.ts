@@ -1,3 +1,4 @@
+import { UserRole } from "@/types";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
@@ -10,16 +11,21 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
+const isStaffAllowedRoute = createRouteMatcher([
+  "/admin/products(.*)",
+  "/admin/categories(.*)",
+]);
+const isUsersRoute = createRouteMatcher(["/admin/users(.*)"]);
 
 // Role hierarchy check
-const ROLE_LEVELS: Record<string, number> = {
-  customer: 0,
-  staff: 1,
-  admin: 2,
-  super_admin: 3,
+const ROLE_LEVELS: Record<UserRole, number> = {
+  [UserRole.CUSTOMER]: 0,
+  [UserRole.STAFF]: 1,
+  [UserRole.ADMIN]: 2,
+  [UserRole.SUPER_ADMIN]: 3,
 };
 
-function hasMinRole(userRole: string | undefined, minRole: string): boolean {
+function hasMinRole(userRole: UserRole | undefined, minRole: UserRole): boolean {
   const userLevel = ROLE_LEVELS[userRole || "customer"] ?? 0;
   const requiredLevel = ROLE_LEVELS[minRole] ?? 0;
   return userLevel >= requiredLevel;
@@ -27,7 +33,6 @@ function hasMinRole(userRole: string | undefined, minRole: string): boolean {
 
 export default clerkMiddleware(async (auth, request) => {
   const { userId, sessionClaims } = await auth();
-  console.log(sessionClaims)
 
   // Allow public routes
   if (isPublicRoute(request)) {
@@ -41,11 +46,22 @@ export default clerkMiddleware(async (auth, request) => {
     return NextResponse.redirect(signInUrl);
   }
 
+  const userRole =
+    (sessionClaims?.role as { role?: UserRole } | undefined)?.role ??
+    (sessionClaims?.metadata as { role?: UserRole } | undefined)?.role ??
+    UserRole.CUSTOMER;
   // Admin routes require STAFF role or higher
   if (isAdminRoute(request)) {
-    const userRole = (sessionClaims?.metadata as { role?: string })?.role;
-    if (!hasMinRole(userRole, "staff")) {
+    if (!hasMinRole(userRole, UserRole.STAFF)) {
       return NextResponse.redirect(new URL("/", request.url));
+    }
+
+    if (userRole === UserRole.STAFF && !isStaffAllowedRoute(request)) {
+      return NextResponse.redirect(new URL("/admin/products", request.url));
+    }
+
+    if (isUsersRoute(request) && !hasMinRole(userRole, UserRole.ADMIN)) {
+      return NextResponse.redirect(new URL("/admin", request.url));
     }
   }
 
@@ -58,3 +74,4 @@ export const config = {
     "/(api|trpc)(.*)",
   ],
 };
+

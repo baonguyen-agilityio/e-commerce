@@ -11,8 +11,13 @@ export class OrderController {
   });
 
   getOrders = asyncHandler(async (req: Request, res: Response) => {
+    const result = await this.orderService.getOrders();
+    res.status(200).json(result);
+  });
+
+  getOrdersByUser = asyncHandler(async (req: Request, res: Response) => {
     const auth = req.auth!;
-    const result = await this.orderService.getOrders(auth.userId!, auth.role!);
+    const result = await this.orderService.getOrdersByUser(auth.userId!);
     res.status(200).json(result);
   });
 

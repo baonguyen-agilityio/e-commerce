@@ -18,6 +18,19 @@ export function useOrders() {
   });
 }
 
+export function useOrdersByUser() {
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+  return useQuery({
+    queryKey: ["orders-by-user"],
+    queryFn: async () => {
+      const token = await getToken();
+      api.setToken(token);
+      return api.getOrdersByUser();
+    },
+    enabled: isLoaded && isSignedIn === true,
+  });
+}
+
 export function useOrder(id: number) {
   return useQuery({
     queryKey: ["order", id],

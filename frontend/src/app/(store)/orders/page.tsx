@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
-import { useOrders } from "@/hooks/use-orders";
+import { useOrdersByUser } from "@/hooks/use-orders";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,7 +13,7 @@ import Link from "next/link";
 
 export default function OrdersPage() {
   const { isSignedIn } = useAuth();
-  const { data: orders, isLoading } = useOrders();
+  const { data: orders, isLoading } = useOrdersByUser();
 
   if (!isSignedIn) {
     return (

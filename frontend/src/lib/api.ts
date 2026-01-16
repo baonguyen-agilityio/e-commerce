@@ -149,6 +149,10 @@ class ApiClient {
     return this.fetch<Order[]>("/orders");
   }
 
+  async getOrdersByUser(): Promise<Order[]> {
+    return this.fetch<Order[]>(`/orders/me`);
+  }
+
   async getOrder(id: number): Promise<Order> {
     return this.fetch<Order>(`/orders/${id}`);
   }

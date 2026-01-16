@@ -9,7 +9,8 @@ export function createOrderRoutes(controller: OrderController): Router {
   const router = Router();
 
   router.post("/", requireAuth(), controller.checkoutOrder);
-  router.get("/",requireAuth(), controller.getOrders);
+  router.get("/", requireAuth(UserRole.ADMIN), controller.getOrders);
+  router.get("/me",requireAuth(), controller.getOrdersByUser);
   router.get("/:orderId",requireAuth(), controller.getOrderById);
 
   return router;
