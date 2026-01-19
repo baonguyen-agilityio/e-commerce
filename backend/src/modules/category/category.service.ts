@@ -5,11 +5,20 @@ import {
   UpdateCategoryDto,
 } from "./category.interface";
 import { Category } from "./entities/Category";
-import { AppError } from "../../shared/middleware/errorHandler";
+import { BadRequestError, NotFoundError } from "../../shared/errors";
 import { PaginatedResult } from "../../shared/interfaces/pagination";
+import { ErrorMessages } from "../../shared/errors/messages";
 
 export class CategoryService implements ICategoryService {
   constructor(private readonly categoryRepository: Repository<Category>) {}
+
+  private async findCategoryOrThrow(id: number): Promise<Category> {
+    const category = await this.categoryRepository.findOneBy({ id });
+    if (!category) {
+      throw new NotFoundError(ErrorMessages.CATEGORY_NOT_FOUND);
+    }
+    return category;
+  }
 
   async getAllCategories(): Promise<PaginatedResult<Category>> {
     const categories = await this.categoryRepository.find();
@@ -23,11 +32,8 @@ export class CategoryService implements ICategoryService {
   }
 
   async getCategoryById(id: number): Promise<Category | null> {
-    const existingCategory = await this.categoryRepository.findOneBy({ id });
-    if (!existingCategory) {
-      throw new AppError(404, "Category not found");
-    }
-    return existingCategory;
+    const category = await this.findCategoryOrThrow(id);
+    return category;
   }
 
   async createCategory(data: CreateCategoryDto): Promise<Category> {
@@ -39,29 +45,19 @@ export class CategoryService implements ICategoryService {
     id: number,
     data: UpdateCategoryDto,
   ): Promise<Category | null> {
-    const existingCategory = await this.categoryRepository.findOneBy({ id });
-    if (!existingCategory) {
-      throw new AppError(404, "Category not found");
-    }
-    Object.assign(existingCategory, data);
-    return this.categoryRepository.save(existingCategory);
+    const category = await this.findCategoryOrThrow(id);
+    Object.assign(category, data);
+    return this.categoryRepository.save(category);
   }
 
   async deleteCategory(id: number): Promise<boolean> {
-    const existingCategory = await this.categoryRepository.findOne({
-      where: { id },
-      relations: ["products"],
-    });
+    const category = await this.findCategoryOrThrow(id);
 
-    if (!existingCategory) {
-      throw new AppError(404, "Category not found");
-    }
-
-    if (existingCategory.products && existingCategory.products.length > 0) {
-      throw new AppError(400, `Cannot delete category. It has ${existingCategory.products.length} associated product(s). Please remove or reassign the products first.`);
+    if (category.products && category.products.length > 0) {
+      throw new BadRequestError(ErrorMessages.CATEGORY_HAS_PRODUCTS);
     }
     
-    await this.categoryRepository.delete(id);
+    await this.categoryRepository.delete(category.id);
     return true;
   }
 }

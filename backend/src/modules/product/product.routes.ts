@@ -14,19 +14,19 @@ export function createProductRoutes(controller: ProductController): Router {
   // admin routes
   router.post(
     "/",
-    requireAuth(UserRole.ADMIN),
+    requireAuth(UserRole.STAFF),
     validate(createProductSchema),
     controller.createProduct,
   );
   router.put(
     "/:id",
-    requireAuth(UserRole.ADMIN),
+    requireAuth(UserRole.STAFF),
     validate(updateProductSchema),
     controller.updateProduct,
   );
   router.delete(
     "/:id",
-    requireAuth(UserRole.ADMIN),
+    requireAuth(UserRole.STAFF),
     controller.deleteProduct,
   );
   return router;

@@ -2,13 +2,14 @@ import { Repository } from "typeorm";
 import { Order } from "./entities/Order";
 import { CheckoutResult, IOrderService } from "./order.interface";
 import { hasPermission, User, UserRole } from "../user/entities/User";
-import { AppError } from "../../shared/middleware/errorHandler";
 import { Cart } from "../cart/entities/Cart";
 import Stripe from "stripe";
 import { CartItem } from "../cart/entities/CartItem";
 import { OrderItem } from "./entities/OrderItem";
 import { Product } from "../product/entities/Product";
 import { IPaymentGateway } from "../../shared/interfaces/IPaymentGateway";
+import { BadRequestError, ForbiddenError, NotFoundError } from "../../shared/errors";
+import { ErrorMessages } from "../../shared/errors/messages";
 
 export class OrderService implements IOrderService {
   private stripe: Stripe;
@@ -24,20 +25,23 @@ export class OrderService implements IOrderService {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
   }
 
-  async checkoutOrder(clerkId: string): Promise<CheckoutResult> {
+  private async findUserOrThrow(clerkId: string): Promise<User> {
     const user = await this.userRepository.findOneBy({ clerkId });
-
     if (!user) {
-      throw new AppError(404, "User not found");
+      throw new NotFoundError(ErrorMessages.USER_NOT_FOUND);
     }
+    return user;
+  }
 
+  async checkoutOrder(clerkId: string): Promise<CheckoutResult> {
+    const user = await this.findUserOrThrow(clerkId);
     const cart = await this.cartRepository.findOne({
       where: { user: { id: user.id } },
       relations: ["items", "items.product"],
     });
 
     if (!cart || !cart.items || cart.items.length === 0) {
-      throw new AppError(400, "Cart is empty");
+      throw new BadRequestError(ErrorMessages.CART_EMPTY);
     }
 
     let total = 0;
@@ -53,7 +57,7 @@ export class OrderService implements IOrderService {
     });
 
     if (!paymentIntent.success) {
-      throw new AppError(400, paymentIntent.error || "Payment failed");
+      throw new BadRequestError(paymentIntent.error || ErrorMessages.PAYMENT_FAILED);
     }
 
     const order = this.orderRepository.create({
@@ -88,11 +92,7 @@ export class OrderService implements IOrderService {
   }
 
   async getOrdersByUser(clerkId: string): Promise<Order[]> {
-    const user = await this.userRepository.findOneBy({ clerkId });
-    if (!user) {
-      throw new AppError(404, "User not found");
-    }
-
+    const user = await this.findUserOrThrow(clerkId);
     const orders = await this.orderRepository.find({
       where: { userId: user.id },
       relations: ["items", "items.product"],
@@ -113,19 +113,19 @@ export class OrderService implements IOrderService {
     });
 
     if (!order) {
-      throw new AppError(404, "Order not found");
+      throw new NotFoundError(ErrorMessages.ORDER_NOT_FOUND);   
     }
 
     if (hasPermission(role, UserRole.ADMIN)) {
       return order;
     }
 
-    const user = await this.userRepository.findOneBy({ clerkId });
-    if (!user || order.userId !== user.id) {
-      throw new AppError(403, "Not authorized to view this order");
+    const user = await this.findUserOrThrow(clerkId);
+    if (order.userId !== user.id) {
+      throw new ForbiddenError(ErrorMessages.NOT_AUTHORIZED_TO_VIEW_ORDER);
     }
 
-    return order;
+    return order; 
   }
 
   async getOrders(): Promise<Order[]> {

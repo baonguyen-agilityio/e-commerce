@@ -17,19 +17,19 @@ export function createCategoryRoutes(controller: CategoryController): Router {
   // admin routes
   router.post(
     "/",
-    requireAuth(UserRole.ADMIN),
+    requireAuth(UserRole.STAFF),
     validate(createCategorySchema),
     controller.createCategory,
   );
   router.put(
     "/:id",
-    requireAuth(UserRole.ADMIN),
+    requireAuth(UserRole.STAFF),
     validate(updateCategorySchema),
     controller.updateCategory,
   );
   router.delete(
     "/:id",
-    requireAuth(UserRole.ADMIN),
+    requireAuth(UserRole.STAFF),
     controller.deleteCategory,
   );
   return router;

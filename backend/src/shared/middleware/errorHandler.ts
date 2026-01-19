@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from "express";
+import { BaseError } from "../errors";
 
-export class AppError extends Error {
-  constructor(public statusCode: number, public message: string) {
-    super(message);
-  }
+export interface ErrorResponse {
+  message: string;
+  code: string;
+  details?: Array<{ field: string; message: string }>;
 }
 
 export const errorHandler = (
@@ -12,12 +13,24 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction
 ): void => {
-  console.error('Error:', err);
+  console.error({
+    timestamp: new Date().toISOString(),
+    method: req.method,
+    path: req.path,
+    error: err.message,
+    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
+  });
 
-  if (err instanceof AppError) {
-    res.status(err.statusCode).json({ message: err.message });
+  if (err instanceof BaseError) {
+    res.status(err.statusCode).json(err.toJSON());
     return;
   }
 
-  res.status(500).json({ error: 'Internal server error' });
+  const response: ErrorResponse = {
+    message: process.env.NODE_ENV === 'production'
+      ? 'An unexpected error occurred'
+      : err.message,
+    code: 'INTERNAL_ERROR',
+  };
+  res.status(500).json(response);
 };

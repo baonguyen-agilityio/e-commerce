@@ -11,10 +11,13 @@ import { errorHandler } from "./shared/middleware/errorHandler";
 import { createCategoryRoutes } from "./modules/category/category.routes";
 import { createCartRoutes } from "./modules/cart/cart.routes";
 import { createOrderRoutes } from "./modules/order/order.routes";
+import helmet from "helmet";
+import { apiLimiter, checkoutLimiter } from "./shared/middleware/rateLimiter";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(clerkMiddleware());
@@ -25,6 +28,7 @@ AppDataSource.initialize()
 
     const container = createContainer(AppDataSource);
 
+    app.use("/api", apiLimiter);
     app.use("/api/users", createUserRoutes(container.userController));
     app.use("/api/products", createProductRoutes(container.productController));
     app.use(
@@ -32,7 +36,11 @@ AppDataSource.initialize()
       createCategoryRoutes(container.categoryController),
     );
     app.use("/api/cart", createCartRoutes(container.cartController));
-    app.use("/api/orders", createOrderRoutes(container.orderController));
+    app.use(
+      "/api/orders",
+      checkoutLimiter,
+      createOrderRoutes(container.orderController),
+    );
 
     app.use(errorHandler);
 

@@ -6,6 +6,7 @@ declare global {
     interface Request {
       auth?: SessionAuthObject & {
         role?: UserRole;
+        clerkId?: string;
       };
     }
   }

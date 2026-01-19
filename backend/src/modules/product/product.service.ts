@@ -6,11 +6,20 @@ import {
   ProductQueryParams,
   UpdateProductDto,
 } from "./product.interface";
-import { AppError } from "../../shared/middleware/errorHandler";
+import { NotFoundError } from "../../shared/errors";
 import { PaginatedResult } from "../../shared/interfaces/pagination";
+import { ErrorMessages } from "../../shared/errors/messages";
 
 export class ProductService implements IProductService {
   constructor(private readonly productRepository: Repository<Product>) {}
+
+  private async findProductOrThrow(id: number): Promise<Product> {
+    const product = await this.productRepository.findOneBy({ id });
+    if (!product) {
+      throw new NotFoundError(ErrorMessages.PRODUCT_NOT_FOUND);
+    }
+    return product; 
+  }
 
   async getAllProducts(
     params: ProductQueryParams,
@@ -61,14 +70,7 @@ export class ProductService implements IProductService {
   }
 
   async getProductById(id: number): Promise<Product> {
-    const existingProduct = await this.productRepository.findOne({
-      where: { id },
-      relations: ["category"],
-    });
-    if (!existingProduct) {
-      throw new AppError(404, "Product not found");
-    }
-    return existingProduct;
+    return await this.findProductOrThrow(id);
   }
 
   async createProduct(data: CreateProductDto): Promise<Product> {
@@ -90,19 +92,14 @@ export class ProductService implements IProductService {
     id: number,
     data: UpdateProductDto,
   ): Promise<Product | null> {
-    const existingProduct = await this.getProductById(id);
-
-    Object.assign(existingProduct, data);
-    return this.productRepository.save(existingProduct);
+    const product = await this.findProductOrThrow(id);
+    Object.assign(product, data);
+    return this.productRepository.save(product);
   }
 
   async deleteProduct(id: number): Promise<boolean> {
-    const existingProduct = await this.productRepository.findOneBy({ id });
-    if (!existingProduct) {
-      throw new AppError(404, "Product not found");
-    }
-
-    await this.productRepository.delete(id);
+    const product = await this.findProductOrThrow(id);
+    await this.productRepository.delete(product.id);
     return true;
   }
 }

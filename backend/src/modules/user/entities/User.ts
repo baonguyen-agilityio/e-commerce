@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   OneToOne,
   OneToMany,
+  BeforeInsert,
 } from "typeorm";
 import { Cart } from "../../cart/entities/Cart";
 import { Order } from "../../order/entities/Order";
@@ -37,6 +38,9 @@ export class User {
   id: number;
 
   @Column({ type: "varchar", unique: true })
+  publicId: string;
+
+  @Column({ type: "varchar", unique: true })
   clerkId: string;
 
   @Column({ type: "varchar" })
@@ -66,4 +70,11 @@ export class User {
 
   @OneToMany(() => Order, (order) => order.user, {onDelete: "CASCADE"})
   orders: Order[];
+
+  @BeforeInsert()
+  generatePublicId() {
+    if (!this.publicId) {
+      this.publicId = this.clerkId;
+    }
+  }
 }

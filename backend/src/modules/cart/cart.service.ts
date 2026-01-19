@@ -4,7 +4,8 @@ import { Cart } from "./entities/Cart";
 import { CartItem } from "./entities/CartItem";
 import { Product } from "../product/entities/Product";
 import { User } from "../user/entities/User";
-import { AppError } from "../../shared/middleware/errorHandler";
+import { BadRequestError, NotFoundError } from "../../shared/errors";
+import { ErrorMessages } from "../../shared/errors/messages";
 
 export class CartService implements ICartService {
   constructor(
@@ -13,6 +14,16 @@ export class CartService implements ICartService {
     private readonly productRepository: Repository<Product>,
     private readonly userRepository: Repository<User>,
   ) {}
+
+  private async findUserOrThrow(clerkId: string): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: { clerkId },
+    });
+    if (!user) {
+      throw new NotFoundError(ErrorMessages.USER_NOT_FOUND);
+    }
+    return user;
+  }
 
   async getOrCreateCart(userId: number): Promise<Cart> {
     let cart = await this.cartRepository.findOne({
@@ -29,13 +40,7 @@ export class CartService implements ICartService {
   }
 
   async getCartByClerkId(clerkId: string): Promise<CartWithTotal> {
-    const user = await this.userRepository.findOne({
-      where: { clerkId },
-    });
-    if (!user) {
-      throw new AppError(404, "Cart not found");
-    }
-
+    const user = await this.findUserOrThrow(clerkId);
     const cart = await this.getOrCreateCart(user.id);
 
     let subtotal = 0;
@@ -54,24 +59,18 @@ export class CartService implements ICartService {
   }
 
   async addItemToCart(clerkId: string, productId: number, quantity: number = 1): Promise<CartItem | null> {
-    const user = await this.userRepository.findOne({
-      where: { clerkId },
-    });
-    if (!user) {
-      throw new AppError(404, "Cart not found");
-    }
-
+    const user = await this.findUserOrThrow(clerkId);
     const cart = await this.getOrCreateCart(user.id);
 
     const product = await this.productRepository.findOne({
       where: { id: productId },
     });
     if (!product || !product.isActive) {
-      throw new AppError(404, "Product not found or not available");
+      throw new NotFoundError(ErrorMessages.PRODUCT_NOT_FOUND_OR_NOT_AVAILABLE);
     }
 
     if (product.stock < quantity) {
-      throw new AppError(400, "Insufficient stock for the requested product");
+      throw new BadRequestError(ErrorMessages.INSUFFICIENT_STOCK_FOR_REQUESTED_PRODUCT);
     }
 
     let cartItem = await this.cartItemRepository.findOne({
@@ -82,7 +81,7 @@ export class CartService implements ICartService {
     if (cartItem) {
       const newQuantity = cartItem.quantity + quantity;
       if (product.stock < newQuantity) {
-        throw new Error('Insufficient stock');
+        throw new BadRequestError(ErrorMessages.INSUFFICIENT_STOCK);
       }
       cartItem.quantity = newQuantity;
     } else {
@@ -105,13 +104,7 @@ export class CartService implements ICartService {
     cartItemId: number,
     quantity: number,
   ): Promise<CartItem | null> {
-    const user = await this.userRepository.findOne({
-      where: { clerkId },
-    });
-    if (!user) {
-      throw new AppError(404, "Cart not found");
-    }
-
+    const user = await this.findUserOrThrow(clerkId);
     const cart = await this.getOrCreateCart(user.id);
 
     const cartItem = await this.cartItemRepository.findOne({
@@ -120,16 +113,16 @@ export class CartService implements ICartService {
     });
 
     if (!cartItem) {
-      throw new AppError(404, "Cart item not found");
+      throw new NotFoundError(ErrorMessages.CART_ITEM_NOT_FOUND);
     }
 
     if (quantity <= 0) {
-      await this.cartItemRepository.delete(cartItem);
+      await this.cartItemRepository.delete(cartItem.id);
       return null;
     }
 
     if (cartItem.product.stock < quantity) {
-      throw new AppError(400, "Insufficient stock for the requested product");
+      throw new BadRequestError(ErrorMessages.INSUFFICIENT_STOCK_FOR_REQUESTED_PRODUCT);
     }
 
     cartItem.quantity = quantity;
@@ -137,13 +130,7 @@ export class CartService implements ICartService {
   }
 
   async removeItemFromCart(clerkId: string, cartItemId: number): Promise<boolean> {
-    const user = await this.userRepository.findOne({
-      where: { clerkId },
-    });
-    if (!user) {
-      throw new AppError(404, "Cart not found");
-    }
-
+    const user = await this.findUserOrThrow(clerkId);
     const cart = await this.getOrCreateCart(user.id);
 
     const cartItem = await this.cartItemRepository.findOne({
@@ -151,21 +138,15 @@ export class CartService implements ICartService {
     });
 
     if (!cartItem) {
-      throw new AppError(404, "Cart item not found");
+      throw new NotFoundError(ErrorMessages.CART_ITEM_NOT_FOUND);
     }
 
-    await this.cartItemRepository.delete(cartItem);
+    await this.cartItemRepository.delete(cartItem.id);
     return true;
   }
 
   async clearCart(clerkId: string): Promise<boolean> {
-    const user = await this.userRepository.findOne({
-      where: { clerkId },
-    });
-    if (!user) {
-      throw new AppError(404, "Cart not found");
-    }
-
+    const user = await this.findUserOrThrow(clerkId);
     const cart = await this.getOrCreateCart(user.id);
 
     await this.cartItemRepository.delete({ cartId: cart.id });

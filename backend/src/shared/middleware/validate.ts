@@ -1,25 +1,24 @@
 import { ZodType } from "zod";
 import { NextFunction, Request, Response } from "express";
+import { ValidationError } from "../errors";
 
-export const validate = (schema: ZodType) => {
+type Source = 'body' | 'query' | 'params';
+
+export const validate = (schema: ZodType, source: Source = 'body') => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const result = schema.safeParse(req.body);
+    const data = req[source];
+    const result = schema.safeParse(data);
 
     if (!result.success) {
-      console.log(result.error);
-      const errors = result.error.issues.map((issue) => ({
+      const details = result.error.issues.map((issue) => ({
         field: issue.path.join("."),
         message: issue.message,
       }));
-
-      res.status(400).json({
-        message: errors[0].message,
-        details: errors,
-      });
-      return;
+      
+      throw new ValidationError(details);
     }
 
-    req.body = result.data;
+    req[source] = result.data as any;
     next();
   };
 };

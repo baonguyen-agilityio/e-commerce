@@ -1,32 +1,37 @@
 import { Request, Response, NextFunction } from "express";
-import { hasPermission, User, UserRole } from "../../modules/user/entities/User";
+import {
+  hasPermission,
+  User,
+  UserRole,
+} from "../../modules/user/entities/User";
 import { getAuth } from "@clerk/express";
 import { AppDataSource } from "../../config/database";
+import { UnauthorizedError, ForbiddenError } from "../errors";
 
 export const requireAuth = (minRole?: UserRole) => {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const auth = getAuth(req);
+    try {
+      const auth = getAuth(req);
 
-    if (!auth.userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+      if (!auth.userId) {
+        throw new UnauthorizedError("Authentication required");
+      }
 
-    const user = await AppDataSource.getRepository(User).findOne({
-      where: { clerkId: auth.userId },
-    });
+      const user = await AppDataSource.getRepository(User).findOne({
+        where: { clerkId: auth.userId },
+      });
 
-    req.auth = { ...auth, userId: auth.userId, role: user?.role };
+      req.auth = { ...auth, clerkId: auth.userId, role: user?.role };
 
-    if (!minRole) {
+      if (minRole) {
+        if (!user || !hasPermission(user.role, minRole)) {
+          throw new ForbiddenError(`${minRole} or higher access required`);
+        }
+      }
+
       next();
-      return;
+    } catch (error) {
+      next(error);
     }
-
-    if (!user || !hasPermission(user.role, minRole)) {
-      res.status(403).json({ message: `${minRole} or higher access required` });
-      return;
-    }
-
-    next();
   };
 };
