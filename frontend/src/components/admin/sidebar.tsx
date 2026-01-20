@@ -19,12 +19,13 @@ import {
 import { UserButton } from "@clerk/nextjs";
 import {
   LayoutDashboard,
-  Package,
-  FolderTree,
+  Sprout,
+  Layers,
   ShoppingCart,
   Users,
   Store,
   ChevronRight,
+  Leaf,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -37,12 +38,12 @@ const navigationItems = [
   {
     title: "Products",
     href: "/admin/products",
-    icon: Package,
+    icon: Sprout,
   },
   {
     title: "Categories",
     href: "/admin/categories",
-    icon: FolderTree,
+    icon: Layers,
   },
   {
     title: "Orders",
@@ -64,21 +65,21 @@ export function AdminSidebar() {
   return (
     <Sidebar
       collapsible="icon"
-      className="border-r border-slate-200 bg-white"
+      className="border-r border-border/50 bg-card"
     >
       {/* Header with Logo */}
-      <SidebarHeader className="border-b border-slate-100 px-4 py-4">
-        <Link href="/admin" className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 shadow-sm">
-            <Store className="h-5 w-5 text-white" />
+      <SidebarHeader className="border-b border-border/50 px-4 py-4">
+        <Link href="/admin" className="flex items-center gap-3 group">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/20 transition-transform group-hover:scale-105">
+            <Leaf className="h-5 w-5 text-primary-foreground" />
           </div>
           {!isCollapsed && (
             <div className="flex flex-col">
-              <span className="font-heading text-lg font-bold text-slate-900 tracking-tight">
-                Luxe<span className="text-amber-500">.</span>
+              <span className="font-heading text-xl font-bold text-foreground tracking-tight flex items-center gap-1">
+                GreenHaven
               </span>
-              <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">
-                Admin
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                Admin Console
               </span>
             </div>
           )}
@@ -86,13 +87,13 @@ export function AdminSidebar() {
       </SidebarHeader>
 
       {/* Navigation */}
-      <SidebarContent className="px-2 py-4">
+      <SidebarContent className="px-3 py-6">
         <SidebarGroup>
-          <SidebarGroupLabel className="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
-            Navigation
+          <SidebarGroupLabel className="px-3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70 mb-3">
+            Management
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
+            <SidebarMenu className="space-y-1.5">
               {navigationItems.map((item) => {
                 const isActive = pathname === item.href;
                 const Icon = item.icon;
@@ -105,28 +106,28 @@ export function AdminSidebar() {
                           asChild
                           isActive={isActive}
                           className={cn(
-                            "cursor-pointer h-10 rounded-lg transition-all duration-200",
+                            "cursor-pointer h-11 rounded-xl transition-all duration-300 font-medium",
                             isActive
-                              ? "bg-amber-50 text-amber-700 font-medium shadow-sm border border-amber-200/50"
-                              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                              ? "bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90 hover:text-primary-foreground"
+                              : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                           )}
                         >
                           <Link href={item.href} className="flex items-center gap-3">
                             <Icon
                               className={cn(
-                                "h-[18px] w-[18px] flex-shrink-0",
-                                isActive ? "text-amber-600" : "text-slate-500"
+                                "h-5 w-5 flex-shrink-0 transition-colors",
+                                isActive ? "text-primary" : "text-muted-foreground group-hover:text-primary"
                               )}
                             />
                             <span className="flex-1">{item.title}</span>
                             {isActive && !isCollapsed && (
-                              <ChevronRight className="h-4 w-4 text-amber-500" />
+                              <ChevronRight className="h-4 w-4 text-primary/70" />
                             )}
                           </Link>
                         </SidebarMenuButton>
                       </TooltipTrigger>
                       {isCollapsed && (
-                        <TooltipContent side="right" className="font-medium">
+                        <TooltipContent side="right" className="font-bold bg-primary text-primary-foreground border-primary rounded-lg">
                           {item.title}
                         </TooltipContent>
                       )}
@@ -140,7 +141,7 @@ export function AdminSidebar() {
 
         {/* Store Link */}
         <SidebarGroup className="mt-auto pt-4">
-          <SidebarGroupLabel className="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
+          <SidebarGroupLabel className="px-3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70 mb-3">
             Quick Links
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -148,15 +149,17 @@ export function AdminSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
-                  className="cursor-pointer h-10 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all duration-200"
+                  className="cursor-pointer h-11 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-300 border border-transparent hover:border-border"
                 >
                   <Link
                     href="/"
                     target="_blank"
                     className="flex items-center gap-3"
                   >
-                    <Store className="h-[18px] w-[18px] text-slate-500" />
-                    <span>View Store</span>
+                    <div className="flex items-center justify-center w-5 h-5">
+                      <Store className="h-4 w-4" />
+                    </div>
+                    <span>View Storefront</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -166,22 +169,25 @@ export function AdminSidebar() {
       </SidebarContent>
 
       {/* Footer with User */}
-      <SidebarFooter className="border-t border-slate-100 p-4">
-        <div className="flex items-center gap-3">
+      <SidebarFooter className="border-t border-border/50 p-4 bg-secondary/10">
+        <div className="flex items-center gap-4 bg-background p-3 rounded-2xl border border-border shadow-sm">
           <UserButton
             afterSignOutUrl="/"
             appearance={{
               elements: {
-                avatarBox: "h-9 w-9 ring-2 ring-slate-100",
+                avatarBox: "h-9 w-9 ring-2 ring-background rounded-full",
               },
             }}
           />
           {!isCollapsed && (
             <div className="flex flex-col min-w-0">
-              <span className="text-sm font-medium text-slate-900 truncate">
-                Administrator
+              <span className="text-sm font-bold text-foreground truncate">
+                Admin User
               </span>
-              <span className="text-xs text-slate-500">Manage your store</span>
+              <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
+                <Sprout className="h-3 w-3 text-primary" />
+                Store Manager
+              </span>
             </div>
           )}
         </div>

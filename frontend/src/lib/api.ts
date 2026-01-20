@@ -11,29 +11,38 @@ import type {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
 
 class ApiClient {
-  private token: string | null = null;
+  private getTokenFn: (() => Promise<string | null>) | null = null;
 
-  setToken(token: string | null) {
-    this.token = token;
+  setTokenSource(fn: () => Promise<string | null>) {
+    this.getTokenFn = fn;
   }
 
   private async fetch<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    isRetry = false
   ): Promise<T> {
     const headers: HeadersInit = {
       "Content-Type": "application/json",
       ...options.headers,
     };
 
-    if (this.token) {
-      (headers as Record<string, string>)["Authorization"] = `Bearer ${this.token}`;
+    if (this.getTokenFn) {
+      const token = await this.getTokenFn();
+      if (token) {
+        (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
+      }
     }
 
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
       headers,
     });
+
+    if (response.status === 401 && !isRetry && this.getTokenFn) {
+      // Token might be expired, try to get a fresh one and retry once
+      return this.fetch<T>(endpoint, options, true);
+    }
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
@@ -47,6 +56,10 @@ class ApiClient {
   async getProducts(params?: ProductQueryParams): Promise<PaginatedResult<Product>> {
     const searchParams = new URLSearchParams();
     if (params?.search) searchParams.set("search", params.search);
+    if (params?.category) searchParams.set("category", params.category);
+    if (params?.categoryId) searchParams.set("categoryId", params.categoryId.toString());
+    if (params?.isActive !== undefined) searchParams.set("isActive", params.isActive.toString());
+    if (params?.inStock !== undefined) searchParams.set("inStock", params.inStock.toString());
     if (params?.minPrice) searchParams.set("minPrice", params.minPrice.toString());
     if (params?.maxPrice) searchParams.set("maxPrice", params.maxPrice.toString());
     if (params?.sort) searchParams.set("sort", params.sort);

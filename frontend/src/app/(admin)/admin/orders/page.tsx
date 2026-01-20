@@ -17,9 +17,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Eye, Package, ShoppingCart, User, Calendar, CreditCard } from "lucide-react";
+import { Eye, Package, ShoppingCart, User, Calendar, CreditCard, Sprout, Leaf } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
+import { formatCurrency } from "@/lib/utils";
 
 export default function AdminOrdersPage() {
   const { data: orders, isLoading } = useOrders();
@@ -28,13 +29,13 @@ export default function AdminOrdersPage() {
   const getStatusStyle = (status: string) => {
     switch (status.toLowerCase()) {
       case "paid":
-        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+        return "bg-green-100/50 text-green-700 border-green-200 font-bold";
       case "pending":
-        return "bg-amber-50 text-amber-700 border-amber-200";
+        return "bg-amber-100/50 text-amber-700 border-amber-200 font-bold";
       case "cancelled":
-        return "bg-red-50 text-red-700 border-red-200";
+        return "bg-red-100/50 text-red-700 border-red-200 font-bold";
       default:
-        return "bg-slate-100 text-slate-600 border-slate-200";
+        return "bg-secondary text-muted-foreground border-border font-bold";
     }
   };
 
@@ -44,10 +45,10 @@ export default function AdminOrdersPage() {
       header: "Order",
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
-            <ShoppingCart className="h-4 w-4 text-amber-600" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary/30">
+            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </div>
-          <span className="font-mono font-semibold text-slate-900">
+          <span className="font-mono font-bold text-foreground">
             #{row.original.id}
           </span>
         </div>
@@ -58,14 +59,14 @@ export default function AdminOrdersPage() {
       header: "Customer",
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100">
-            <User className="h-4 w-4 text-slate-500" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+            <User className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <p className="font-medium text-slate-900">
+            <p className="font-bold text-foreground">
               {row.original.user?.name || "Guest"}
             </p>
-            <p className="text-xs text-slate-500">{row.original.user?.email}</p>
+            <p className="text-xs text-muted-foreground">{row.original.user?.email}</p>
           </div>
         </div>
       ),
@@ -74,7 +75,7 @@ export default function AdminOrdersPage() {
       accessorKey: "items",
       header: "Items",
       cell: ({ row }) => (
-        <Badge variant="secondary" className="bg-slate-100 text-slate-600">
+        <Badge variant="secondary" className="bg-secondary/50 text-foreground border-border">
           {row.original.items?.length || 0} items
         </Badge>
       ),
@@ -83,8 +84,8 @@ export default function AdminOrdersPage() {
       accessorKey: "total",
       header: "Total",
       cell: ({ row }) => (
-        <span className="font-mono font-semibold text-amber-600">
-          ${Number(row.original.total).toFixed(2)}
+        <span className="font-mono font-black text-primary">
+          {formatCurrency(row.original.total)}
         </span>
       ),
     },
@@ -101,7 +102,7 @@ export default function AdminOrdersPage() {
       accessorKey: "createdAt",
       header: "Date",
       cell: ({ row }) => (
-        <div className="flex items-center gap-2 text-slate-500">
+        <div className="flex items-center gap-2 text-muted-foreground font-medium">
           <Calendar className="h-4 w-4" />
           <span className="text-sm">
             {new Date(row.original.createdAt).toLocaleDateString("en-US", {
@@ -119,8 +120,11 @@ export default function AdminOrdersPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setViewingOrder(row.original)}
-          className="h-8 w-8 cursor-pointer hover:bg-amber-50"
+          onClick={(e) => {
+            e.stopPropagation();
+            setViewingOrder(row.original);
+          }}
+          className="h-8 w-8 cursor-pointer hover:bg-secondary hover:text-foreground rounded-lg"
         >
           <Eye className="h-4 w-4" />
         </Button>
@@ -133,10 +137,10 @@ export default function AdminOrdersPage() {
       <div className="space-y-6">
         <div className="grid gap-4 md:grid-cols-3">
           {[...Array(3)].map((_, i) => (
-            <Skeleton key={i} className="h-24 bg-slate-100" />
+            <Skeleton key={i} className="h-24 bg-secondary/50 rounded-[2rem]" />
           ))}
         </div>
-        <Skeleton className="h-[500px] bg-slate-100" />
+        <Skeleton className="h-[500px] bg-secondary/50 rounded-[2rem]" />
       </div>
     );
   }
@@ -150,62 +154,66 @@ export default function AdminOrdersPage() {
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="bg-white border-slate-200">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50">
-              <ShoppingCart className="h-6 w-6 text-blue-600" />
+        <Card className="bg-card border-border/50 shadow-sm rounded-[2rem] hover:shadow-md transition-shadow">
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100/50">
+              <ShoppingCart className="h-7 w-7 text-blue-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold font-mono text-slate-900">
+              <p className="text-3xl font-black font-heading text-foreground tracking-tight">
                 {totalOrders}
               </p>
-              <p className="text-sm text-slate-500">Total Orders</p>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Total Orders</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white border-slate-200">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50">
-              <CreditCard className="h-6 w-6 text-emerald-600" />
+        <Card className="bg-card border-border/50 shadow-sm rounded-[2rem] hover:shadow-md transition-shadow">
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-green-100/50">
+              <CreditCard className="h-7 w-7 text-green-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold font-mono text-slate-900">
+              <p className="text-3xl font-black font-heading text-foreground tracking-tight">
                 {paidOrders}
               </p>
-              <p className="text-sm text-slate-500">Completed</p>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Completed</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white border-slate-200">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50">
-              <Package className="h-6 w-6 text-amber-600" />
+        <Card className="bg-card border-border/50 shadow-sm rounded-[2rem] hover:shadow-md transition-shadow">
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100/50">
+              <Package className="h-7 w-7 text-amber-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold font-mono text-amber-600">
-                ${totalRevenue.toFixed(2)}
+              <p className="text-3xl font-black font-heading text-amber-600 tracking-tight">
+                {formatCurrency(totalRevenue)}
               </p>
-              <p className="text-sm text-slate-500">Revenue</p>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Revenue</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Data Table */}
-      <DataTable columns={columns} data={orders || []} />
+      <DataTable
+        columns={columns}
+        data={orders || []}
+        onRowClick={(order) => setViewingOrder(order)}
+      />
 
       {/* Order Details Dialog */}
       <Dialog
         open={!!viewingOrder}
         onOpenChange={(open) => !open && setViewingOrder(null)}
       >
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-2xl bg-card border-border rounded-[2rem]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-slate-900">
-              <ShoppingCart className="h-5 w-5 text-amber-500" />
+            <DialogTitle className="flex items-center gap-2 text-foreground font-heading text-2xl">
+              <ShoppingCart className="h-6 w-6 text-primary" />
               Order #{viewingOrder?.id}
             </DialogTitle>
-            <DialogDescription className="text-slate-500">
+            <DialogDescription className="text-muted-foreground font-medium">
               Placed on{" "}
               {viewingOrder &&
                 new Date(viewingOrder.createdAt).toLocaleString("en-US", {
@@ -218,49 +226,50 @@ export default function AdminOrdersPage() {
             <div className="space-y-6">
               {/* Order Info */}
               <div className="grid grid-cols-2 gap-4">
-                <Card className="bg-slate-50 border-slate-200">
+                <Card className="bg-secondary/10 border-border/50 rounded-2xl shadow-none">
                   <CardContent className="p-4 space-y-1">
-                    <p className="text-xs text-slate-500 uppercase tracking-wider">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                       Customer
                     </p>
-                    <p className="font-medium text-slate-900">
+                    <p className="font-bold text-foreground">
                       {viewingOrder.user?.name || "Guest"}
                     </p>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-muted-foreground font-medium">
                       {viewingOrder.user?.email}
                     </p>
                   </CardContent>
                 </Card>
-                <Card className="bg-slate-50 border-slate-200">
+                <Card className="bg-secondary/10 border-border/50 rounded-2xl shadow-none">
                   <CardContent className="p-4 space-y-1">
-                    <p className="text-xs text-slate-500 uppercase tracking-wider">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                       Status
                     </p>
                     <Badge className={getStatusStyle(viewingOrder.status)}>
                       {viewingOrder.status}
                     </Badge>
-                    <p className="text-xs text-slate-500 font-mono">
+                    <p className="text-xs text-muted-foreground font-mono mt-1">
                       {viewingOrder.paymentId || "No payment ID"}
                     </p>
                   </CardContent>
                 </Card>
               </div>
 
-              <Separator className="bg-slate-200" />
+              <Separator className="bg-border" />
 
               {/* Order Items */}
               <div>
-                <h4 className="text-sm font-semibold mb-3 text-slate-900">
+                <h4 className="text-sm font-bold mb-3 text-foreground uppercase tracking-wider flex items-center gap-2">
+                  <Sprout className="h-4 w-4 text-primary" />
                   Order Items
                 </h4>
-                <ScrollArea className="h-[200px]">
+                <ScrollArea className="h-[200px] w-full pr-4">
                   <div className="space-y-3">
                     {viewingOrder.items?.map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center gap-4 p-3 rounded-lg bg-slate-50 border border-slate-200"
+                        className="flex items-center gap-4 p-3 rounded-xl bg-secondary/10 border border-border/50"
                       >
-                        <div className="relative h-14 w-14 rounded-lg overflow-hidden bg-white border border-slate-200 flex-shrink-0">
+                        <div className="relative h-14 w-14 rounded-lg overflow-hidden bg-background border border-border flex-shrink-0">
                           {item.product?.imageUrl ? (
                             <Image
                               src={item.product.imageUrl}
@@ -271,24 +280,20 @@ export default function AdminOrdersPage() {
                             />
                           ) : (
                             <div className="flex items-center justify-center h-full">
-                              <Package className="h-5 w-5 text-slate-400" />
+                              <Leaf className="h-5 w-5 text-muted-foreground" />
                             </div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate text-slate-900">
+                          <p className="font-bold truncate text-foreground">
                             {item.product?.name || "Product"}
                           </p>
-                          <p className="text-sm text-slate-500">
-                            {item.quantity} × $
-                            {Number(item.priceAtPurchase).toFixed(2)}
+                          <p className="text-sm font-medium text-muted-foreground">
+                            {item.quantity} × {formatCurrency(item.priceAtPurchase)}
                           </p>
                         </div>
-                        <p className="font-mono font-semibold text-slate-900">
-                          $
-                          {(
-                            Number(item.priceAtPurchase) * item.quantity
-                          ).toFixed(2)}
+                        <p className="font-mono font-black text-primary">
+                          {formatCurrency(Number(item.priceAtPurchase) * item.quantity)}
                         </p>
                       </div>
                     ))}
@@ -296,13 +301,13 @@ export default function AdminOrdersPage() {
                 </ScrollArea>
               </div>
 
-              <Separator className="bg-slate-200" />
+              <Separator className="bg-border" />
 
               {/* Total */}
-              <div className="flex justify-between items-center">
-                <span className="font-semibold text-slate-900">Total</span>
-                <span className="text-2xl font-mono font-bold text-amber-600">
-                  ${Number(viewingOrder.total).toFixed(2)}
+              <div className="flex justify-between items-center bg-primary/5 p-4 rounded-2xl border border-primary/10">
+                <span className="font-bold text-foreground text-lg">Total Harvest Value</span>
+                <span className="text-2xl font-mono font-black text-primary">
+                  {formatCurrency(viewingOrder.total)}
                 </span>
               </div>
             </div>

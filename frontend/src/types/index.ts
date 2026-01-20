@@ -40,6 +40,10 @@ export interface Product {
 
 export interface ProductQueryParams {
   search?: string;
+  category?: string;
+  categoryId?: number;
+  isActive?: boolean;
+  inStock?: boolean;
   minPrice?: number;
   maxPrice?: number;
   sort?: string;

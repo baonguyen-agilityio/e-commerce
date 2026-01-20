@@ -6,6 +6,5 @@ export const addItemToCartSchema = z.object({
 });
 
 export const updateItemQuantitySchema = z.object({
-  cartItemId: z.number().int().positive(),
-  quantity: z.number().int(),
+  quantity: z.number().int().min(1, "Quantity must be at least 1"),
 });

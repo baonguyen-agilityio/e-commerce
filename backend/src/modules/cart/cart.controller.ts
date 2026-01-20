@@ -3,7 +3,7 @@ import { asyncHandler } from "../../shared/middleware/asyncHandler";
 import { ICartService } from "./cart.interface";
 
 export class CartController {
-  constructor(private readonly cartService: ICartService) {}
+  constructor(private readonly cartService: ICartService) { }
 
   getCart = asyncHandler(async (req: Request, res: Response) => {
     const auth = req.auth!;
@@ -24,7 +24,8 @@ export class CartController {
 
   updateItemQuantity = asyncHandler(async (req: Request, res: Response) => {
     const auth = req.auth!;
-    const { cartItemId, quantity } = req.body;
+    const cartItemId = parseInt(req.params.id, 10);
+    const { quantity } = req.body;
     const cartItem = await this.cartService.updateItemQuantity(
       auth.userId!,
       cartItemId,

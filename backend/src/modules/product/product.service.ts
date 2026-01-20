@@ -11,14 +11,17 @@ import { PaginatedResult } from "../../shared/interfaces/pagination";
 import { ErrorMessages } from "../../shared/errors/messages";
 
 export class ProductService implements IProductService {
-  constructor(private readonly productRepository: Repository<Product>) {}
+  constructor(private readonly productRepository: Repository<Product>) { }
 
   private async findProductOrThrow(id: number): Promise<Product> {
-    const product = await this.productRepository.findOneBy({ id });
+    const product = await this.productRepository.findOne({
+      where: { id },
+      relations: ["category"],
+    });
     if (!product) {
       throw new NotFoundError(ErrorMessages.PRODUCT_NOT_FOUND);
     }
-    return product; 
+    return product;
   }
 
   async getAllProducts(
@@ -26,6 +29,10 @@ export class ProductService implements IProductService {
   ): Promise<PaginatedResult<Product>> {
     const {
       search,
+      category,
+      categoryId,
+      isActive,
+      inStock,
       minPrice,
       maxPrice,
       sort = "createdAt",
@@ -44,6 +51,24 @@ export class ProductService implements IProductService {
           search: `%${search}%`,
         },
       );
+    }
+
+    if (category) {
+      queryBuilder.andWhere("category.name = :category", { category });
+    }
+
+    if (categoryId) {
+      queryBuilder.andWhere("product.categoryId = :categoryId", { categoryId });
+    }
+
+    if (isActive !== undefined) {
+      queryBuilder.andWhere("product.isActive = :isActive", { isActive });
+    }
+
+    if (inStock === true) {
+      queryBuilder.andWhere("product.stock > 0");
+    } else if (inStock === false) {
+      queryBuilder.andWhere("product.stock = 0");
     }
 
     if (minPrice !== undefined) {

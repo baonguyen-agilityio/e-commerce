@@ -18,24 +18,21 @@ export function AuthSync() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    if (isSignedIn) {
+      api.setTokenSource(getToken);
+    } else {
+      api.setTokenSource(async () => null);
+    }
+  }, [isSignedIn, getToken]);
+
+  useEffect(() => {
     const syncUser = async () => {
-      if (!isSignedIn) {
-        api.setToken(null);
-        return;
-      }
+      if (!isSignedIn) return;
 
       try {
-        // 1. Get and set the Clerk token
-        const token = await getToken();
-        api.setToken(token);
-
-        // 2. Call /users/me to sync user with backend
-        // This creates the user in DB if they don't exist
+        // Call /users/me to sync user with backend
         const user = await api.getMe();
-        
-        // 3. Cache the user data
         queryClient.setQueryData(["me"], user);
-        
         console.log("[AuthSync] User synced with backend:", user.email);
       } catch (error) {
         console.error("[AuthSync] Failed to sync user with backend:", error);
@@ -43,22 +40,7 @@ export function AuthSync() {
     };
 
     syncUser();
-  }, [isSignedIn, getToken, queryClient]);
-
-  // Refresh token periodically (Clerk tokens expire)
-  useEffect(() => {
-    if (!isSignedIn) return;
-
-    const refreshToken = async () => {
-      const token = await getToken();
-      api.setToken(token);
-    };
-
-    // Refresh every 50 seconds (tokens typically expire in 60s)
-    const interval = setInterval(refreshToken, 50 * 1000);
-    
-    return () => clearInterval(interval);
-  }, [isSignedIn, getToken]);
+  }, [isSignedIn, queryClient]);
 
   return null;
 }

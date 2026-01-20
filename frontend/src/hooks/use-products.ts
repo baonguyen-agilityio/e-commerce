@@ -2,18 +2,19 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Product, ProductQueryParams } from "@/types";
+import type { Product, ProductQueryParams, PaginatedResult } from "@/types";
 import { toast } from "sonner";
 
-export function useProducts(params?: ProductQueryParams) {
-  return useQuery({
+export function useProducts(params?: ProductQueryParams, options?: object) {
+  return useQuery<PaginatedResult<Product>>({
     queryKey: ["products", params],
     queryFn: () => api.getProducts(params),
+    ...options,
   });
 }
 
 export function useProduct(id: number) {
-  return useQuery({
+  return useQuery<Product>({
     queryKey: ["product", id],
     queryFn: () => api.getProduct(id),
     enabled: !!id,

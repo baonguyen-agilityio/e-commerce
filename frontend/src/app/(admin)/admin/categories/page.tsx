@@ -11,8 +11,8 @@ import {
 import { Category } from "@/types";
 import { DataTable } from "@/components/admin/data-table";
 import { CategoryForm } from "@/components/admin/category-form";
+import { StatsCard } from "@/components/admin/stats-card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, MoreHorizontal, Pencil, Trash2, FolderTree, Hash, Layers } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil, Trash2, Sprout, Hash, Leaf } from "lucide-react";
 
 export default function AdminCategoriesPage() {
   const { data: categories, isLoading } = useCategories();
@@ -64,10 +64,10 @@ export default function AdminCategoriesPage() {
       header: "ID",
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
-            <Hash className="h-4 w-4 text-amber-600" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary/30">
+            <Hash className="h-4 w-4 text-muted-foreground" />
           </div>
-          <span className="font-mono text-slate-500">{row.original.id}</span>
+          <span className="font-mono font-bold text-muted-foreground">{row.original.id}</span>
         </div>
       ),
     },
@@ -76,10 +76,10 @@ export default function AdminCategoriesPage() {
       header: "Name",
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
-            <FolderTree className="h-4 w-4 text-slate-500" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+            <Leaf className="h-4 w-4 text-primary" />
           </div>
-          <span className="font-semibold text-slate-900">{row.original.name}</span>
+          <span className="font-bold text-foreground text-base tracking-tight">{row.original.name}</span>
         </div>
       ),
     },
@@ -87,9 +87,9 @@ export default function AdminCategoriesPage() {
       accessorKey: "description",
       header: "Description",
       cell: ({ row }) => (
-        <span className="text-slate-500 line-clamp-2 max-w-[300px]">
+        <span className="text-muted-foreground font-medium line-clamp-2 max-w-[300px]">
           {row.original.description || (
-            <span className="italic text-slate-400">No description</span>
+            <span className="italic text-muted-foreground/50">No description</span>
           )}
         </span>
       ),
@@ -99,22 +99,27 @@ export default function AdminCategoriesPage() {
       cell: ({ row }) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 cursor-pointer">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 cursor-pointer hover:bg-secondary hover:text-foreground rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            >
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuContent align="end" className="w-40 bg-card border-border rounded-xl shadow-lg">
             <DropdownMenuItem
               onClick={() => setEditingCategory(row.original)}
-              className="cursor-pointer"
+              className="cursor-pointer focus:bg-secondary focus:text-foreground rounded-lg"
             >
               <Pencil className="h-4 w-4 mr-2" />
               Edit
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="bg-border" />
             <DropdownMenuItem
               onClick={() => handleDelete(row.original.id)}
-              className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+              className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50 rounded-lg"
             >
               <Trash2 className="h-4 w-4 mr-2" />
               Delete
@@ -130,10 +135,10 @@ export default function AdminCategoriesPage() {
       <div className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2">
           {[...Array(2)].map((_, i) => (
-            <Skeleton key={i} className="h-24 bg-slate-100" />
+            <Skeleton key={i} className="h-28 bg-secondary/50 rounded-[2rem]" />
           ))}
         </div>
-        <Skeleton className="h-[400px] bg-slate-100" />
+        <Skeleton className="h-[400px] bg-secondary/50 rounded-[2rem]" />
       </div>
     );
   }
@@ -142,48 +147,36 @@ export default function AdminCategoriesPage() {
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="bg-white border-slate-200">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50">
-              <FolderTree className="h-6 w-6 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold font-mono text-slate-900">
-                {categories?.length || 0}
-              </p>
-              <p className="text-sm text-slate-500">Total Categories</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border-slate-200">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-50">
-              <Layers className="h-6 w-6 text-violet-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold font-mono text-slate-900">
-                {categories?.length || 0}
-              </p>
-              <p className="text-sm text-slate-500">Active Categories</p>
-            </div>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Total Collections"
+          value={categories?.length || 0}
+          icon={Sprout}
+          description="Categories defined"
+          iconClassName="bg-primary/10 text-primary"
+        />
+        <StatsCard
+          title="Active Collections"
+          value={categories?.length || 0}
+          icon={Leaf}
+          description="Visible to customers"
+          iconClassName="bg-secondary/30 text-foreground"
+        />
       </div>
 
       {/* Header with Add Button */}
       <div className="flex items-center justify-end">
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white cursor-pointer shadow-sm">
+            <Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer shadow-lg shadow-primary/20 rounded-xl h-11 px-6 font-bold">
               <Plus className="h-4 w-4" />
               Add Category
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md bg-card border-border rounded-[2rem]">
             <DialogHeader>
-              <DialogTitle className="text-slate-900">Add New Category</DialogTitle>
-              <DialogDescription className="text-slate-500">
-                Create a new category to organize your products.
+              <DialogTitle className="text-foreground font-heading text-2xl">Add New Category</DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                Create a new collection for your garden.
               </DialogDescription>
             </DialogHeader>
             <CategoryForm
@@ -207,10 +200,10 @@ export default function AdminCategoriesPage() {
         open={!!editingCategory}
         onOpenChange={(open) => !open && setEditingCategory(null)}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-card border-border rounded-[2rem]">
           <DialogHeader>
-            <DialogTitle className="text-slate-900">Edit Category</DialogTitle>
-            <DialogDescription className="text-slate-500">
+            <DialogTitle className="text-foreground font-heading text-2xl">Edit Category</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
               Update the category details below.
             </DialogDescription>
           </DialogHeader>

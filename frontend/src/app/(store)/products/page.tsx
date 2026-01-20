@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { ProductCard } from "@/components/store/product-card";
 import { ProductFilters } from "@/components/store/product-filters";
 import { useProducts } from "@/hooks/use-products";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { SlidersHorizontal, Search, ChevronLeft, ChevronRight, Package } from "lucide-react";
+import { SlidersHorizontal, Search, ChevronLeft, ChevronRight, Sprout } from "lucide-react";
 
 export default function ProductsPage() {
   const searchParams = useSearchParams();
@@ -24,14 +25,20 @@ export default function ProductsPage() {
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>();
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [inStock, setInStock] = useState<boolean | undefined>();
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"ASC" | "DESC">("DESC");
   const [page, setPage] = useState(1);
 
+  const debouncedSearch = useDebounce(search, 500);
+  const debouncedPriceRange = useDebounce(priceRange, 500);
+
   const { data: productsData, isLoading } = useProducts({
-    search: search || undefined,
-    minPrice: priceRange[0] > 0 ? priceRange[0] : undefined,
-    maxPrice: priceRange[1] < 1000 ? priceRange[1] : undefined,
+    search: debouncedSearch || undefined,
+    categoryId: selectedCategory,
+    inStock,
+    minPrice: debouncedPriceRange[0] > 0 ? debouncedPriceRange[0] : undefined,
+    maxPrice: debouncedPriceRange[1] < 1000 ? debouncedPriceRange[1] : undefined,
     sort: sortBy,
     order: sortOrder,
     page,
@@ -53,6 +60,7 @@ export default function ProductsPage() {
   const handleClearFilters = () => {
     setSelectedCategory(undefined);
     setPriceRange([0, 1000]);
+    setInStock(undefined);
     setSearch("");
     setPage(1);
   };
@@ -67,10 +75,10 @@ export default function ProductsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="font-heading text-3xl font-bold text-slate-900">All Products</h1>
-        <p className="text-slate-500 mt-1">
-          {productsData?.total || 0} products found
+      <div className="mb-8 pl-4 border-l-4 border-primary/50">
+        <h1 className="font-heading text-3xl font-bold text-foreground">Our Garden</h1>
+        <p className="text-muted-foreground mt-1 font-medium">
+          {productsData?.total || 0} thriving varieties
         </p>
       </div>
 
@@ -82,6 +90,8 @@ export default function ProductsPage() {
             onCategoryChange={setSelectedCategory}
             priceRange={priceRange}
             onPriceRangeChange={setPriceRange}
+            inStock={inStock}
+            onInStockChange={setInStock}
             onClearFilters={handleClearFilters}
           />
         </aside>
@@ -92,11 +102,11 @@ export default function ProductsPage() {
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <form onSubmit={handleSearch} className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="Search products..."
-                  className="pl-10 h-10 bg-white border-slate-200 focus:bg-white focus:border-amber-300 focus:ring-amber-100"
+                  placeholder="Search plants, seeds, care tools..."
+                  className="pl-10 h-10 bg-background border-border text-foreground placeholder:text-muted-foreground/70 focus:bg-background focus:border-primary focus:ring-primary/20 rounded-xl"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -107,18 +117,20 @@ export default function ProductsPage() {
               {/* Mobile Filters */}
               <Sheet>
                 <SheetTrigger asChild className="lg:hidden">
-                  <Button variant="outline" className="cursor-pointer border-slate-200 text-slate-600 hover:bg-slate-100">
+                  <Button variant="outline" className="cursor-pointer border-border text-foreground hover:bg-secondary hover:text-foreground rounded-xl">
                     <SlidersHorizontal className="h-4 w-4 mr-2" />
                     Filters
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="bg-white">
+                <SheetContent side="left" className="bg-background">
                   <div className="mt-6">
                     <ProductFilters
                       selectedCategory={selectedCategory}
                       onCategoryChange={setSelectedCategory}
                       priceRange={priceRange}
                       onPriceRangeChange={setPriceRange}
+                      inStock={inStock}
+                      onInStockChange={setInStock}
                       onClearFilters={handleClearFilters}
                     />
                   </div>
@@ -130,23 +142,23 @@ export default function ProductsPage() {
                 value={`${sortBy}-${sortOrder}`}
                 onValueChange={handleSortChange}
               >
-                <SelectTrigger className="w-[180px] cursor-pointer h-10 bg-white border-slate-200 text-slate-700">
+                <SelectTrigger className="w-[180px] cursor-pointer h-10 bg-background border-border text-foreground rounded-xl">
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="createdAt-DESC" className="cursor-pointer">
-                    Newest
+                <SelectContent className="bg-popover border-border">
+                  <SelectItem value="createdAt-DESC" className="cursor-pointer focus:bg-secondary focus:text-foreground">
+                    Newest Arrivals
                   </SelectItem>
-                  <SelectItem value="createdAt-ASC" className="cursor-pointer">
+                  <SelectItem value="createdAt-ASC" className="cursor-pointer focus:bg-secondary focus:text-foreground">
                     Oldest
                   </SelectItem>
-                  <SelectItem value="price-ASC" className="cursor-pointer">
+                  <SelectItem value="price-ASC" className="cursor-pointer focus:bg-secondary focus:text-foreground">
                     Price: Low to High
                   </SelectItem>
-                  <SelectItem value="price-DESC" className="cursor-pointer">
+                  <SelectItem value="price-DESC" className="cursor-pointer focus:bg-secondary focus:text-foreground">
                     Price: High to Low
                   </SelectItem>
-                  <SelectItem value="name-ASC" className="cursor-pointer">
+                  <SelectItem value="name-ASC" className="cursor-pointer focus:bg-secondary focus:text-foreground">
                     Name: A-Z
                   </SelectItem>
                 </SelectContent>
@@ -159,24 +171,24 @@ export default function ProductsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
                 <div key={i} className="space-y-4">
-                  <Skeleton className="aspect-square rounded-lg bg-slate-200" />
-                  <Skeleton className="h-4 w-3/4 bg-slate-200" />
-                  <Skeleton className="h-4 w-1/2 bg-slate-200" />
+                  <Skeleton className="aspect-[4/5] rounded-[2rem] bg-secondary/50" />
+                  <Skeleton className="h-4 w-3/4 bg-secondary/50" />
+                  <Skeleton className="h-4 w-1/2 bg-secondary/50" />
                 </div>
               ))}
             </div>
           ) : productsData?.data.length === 0 ? (
             <div className="text-center py-16">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 mx-auto mb-4">
-                <Package className="h-10 w-10 text-slate-400" />
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-secondary mx-auto mb-4">
+                <Sprout className="h-10 w-10 text-muted-foreground/50" />
               </div>
-              <p className="text-slate-500 mb-4">No products found</p>
+              <p className="text-muted-foreground mb-4 font-medium">No greenery found matching your criteria</p>
               <Button
                 variant="outline"
-                className="cursor-pointer border-slate-200 text-slate-700 hover:bg-slate-100"
+                className="cursor-pointer border-primary text-primary hover:bg-primary hover:text-primary-foreground rounded-xl"
                 onClick={handleClearFilters}
               >
-                Clear filters
+                Clear all filters
               </Button>
             </div>
           ) : (
@@ -189,26 +201,26 @@ export default function ProductsPage() {
 
               {/* Pagination */}
               {productsData && productsData.totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-8">
+                <div className="flex items-center justify-center gap-2 mt-12 mb-8">
                   <Button
                     variant="outline"
                     size="icon"
                     disabled={page === 1}
                     onClick={() => setPage(page - 1)}
-                    className="cursor-pointer h-10 w-10 border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40"
+                    className="cursor-pointer h-10 w-10 border-border text-foreground hover:bg-secondary hover:text-foreground rounded-xl disabled:opacity-40"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  <span className="text-sm text-slate-600 px-4">
-                    Page <span className="font-semibold text-slate-900">{page}</span> of{" "}
-                    <span className="font-semibold text-slate-900">{productsData.totalPages}</span>
+                  <span className="text-sm text-muted-foreground px-4 font-medium">
+                    Page <span className="font-bold text-foreground">{page}</span> of{" "}
+                    <span className="font-bold text-foreground">{productsData.totalPages}</span>
                   </span>
                   <Button
                     variant="outline"
                     size="icon"
                     disabled={page === productsData.totalPages}
                     onClick={() => setPage(page + 1)}
-                    className="cursor-pointer h-10 w-10 border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40"
+                    className="cursor-pointer h-10 w-10 border-border text-foreground hover:bg-secondary hover:text-foreground rounded-xl disabled:opacity-40"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>

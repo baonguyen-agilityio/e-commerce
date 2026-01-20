@@ -26,6 +26,9 @@ export interface ProductQueryParams {
   limit?: number;
   search?: string;
   category?: string;
+  categoryId?: number;
+  isActive?: boolean;
+  inStock?: boolean;
   minPrice?: number;
   maxPrice?: number;
   sort?: 'name' | 'price' | 'createdAt';

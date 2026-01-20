@@ -29,25 +29,25 @@ export function StatsCard({
   return (
     <Card
       className={cn(
-        "group cursor-pointer overflow-hidden bg-white border-slate-200 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-100/50 transition-all duration-300",
+        "group cursor-pointer overflow-hidden bg-card border-border/50 hover:border-primary/50 hover:bg-secondary/10 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 rounded-[2rem]",
         className
       )}
     >
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div className="space-y-2">
-            <p className="text-sm font-medium text-slate-500">{title}</p>
+            <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{title}</p>
             <div className="flex items-baseline gap-2">
-              <p className="text-3xl font-bold tracking-tight text-slate-900 font-mono">
+              <p className="text-3xl font-black tracking-tight text-foreground font-heading">
                 {value}
               </p>
               {trend && (
                 <span
                   className={cn(
-                    "text-xs font-semibold px-1.5 py-0.5 rounded-full",
+                    "text-xs font-bold px-1.5 py-0.5 rounded-full flex items-center",
                     trend.isPositive
-                      ? "text-emerald-700 bg-emerald-50"
-                      : "text-red-700 bg-red-50"
+                      ? "text-green-700 bg-green-100/50"
+                      : "text-red-700 bg-red-100/50"
                   )}
                 >
                   {trend.isPositive ? "+" : ""}
@@ -56,7 +56,7 @@ export function StatsCard({
               )}
             </div>
             {description && (
-              <p className="text-xs text-slate-400">{description}</p>
+              <p className="text-xs font-medium text-muted-foreground/70">{description}</p>
             )}
           </div>
           <div

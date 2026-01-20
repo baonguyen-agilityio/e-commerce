@@ -2,25 +2,18 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ProductService } from "../product.service";
 import {
   createMockRepository,
+  createMockQueryBuilder,
   MockRepository,
 } from "../../../test/mocks/repository.mock";
 import { Product } from "../entities/Product";
 import { NotFoundError } from "../../../shared/errors";
+import { createMockProduct } from "../../../test/factories/product.factory";
 
 describe("ProductService", () => {
   let productService: ProductService;
   let mockProductRepository: MockRepository<Product>;
 
-  const mockProduct: Partial<Product> = {
-    id: 1,
-    name: "Test Product",
-    description: "Test Description",
-    price: 99.99,
-    stock: 10,
-    isActive: true,
-    categoryId: 1,
-    createdAt: new Date(),
-  };
+  const mockProduct = createMockProduct({ id: 1 });
 
   beforeEach(() => {
     mockProductRepository = createMockRepository<Product>();
@@ -125,16 +118,10 @@ describe("ProductService", () => {
   describe("getAllProducts", () => {
     it("should return paginated products", async () => {
       const mockProducts = [mockProduct];
-      const mockQueryBuilder = {
-        leftJoinAndSelect: vi.fn().mockReturnThis(),
-        andWhere: vi.fn().mockReturnThis(),
-        orderBy: vi.fn().mockReturnThis(),
-        skip: vi.fn().mockReturnThis(),
-        take: vi.fn().mockReturnThis(),
-        getManyAndCount: vi.fn().mockResolvedValue([mockProducts, 1]),
-      };
+      const mockQueryBuilder = createMockQueryBuilder(mockProducts, 1);
+
       mockProductRepository.createQueryBuilder.mockReturnValue(
-        mockQueryBuilder,
+        mockQueryBuilder as any,
       );
 
       const result = await productService.getAllProducts({
@@ -148,16 +135,9 @@ describe("ProductService", () => {
     });
 
     it("should apply search filter", async () => {
-      const mockQueryBuilder = {
-        leftJoinAndSelect: vi.fn().mockReturnThis(),
-        andWhere: vi.fn().mockReturnThis(),
-        orderBy: vi.fn().mockReturnThis(),
-        skip: vi.fn().mockReturnThis(),
-        take: vi.fn().mockReturnThis(),
-        getManyAndCount: vi.fn().mockResolvedValue([[], 0]),
-      };
+      const mockQueryBuilder = createMockQueryBuilder([], 0);
       mockProductRepository.createQueryBuilder.mockReturnValue(
-        mockQueryBuilder,
+        mockQueryBuilder as any,
       );
 
       await productService.getAllProducts({

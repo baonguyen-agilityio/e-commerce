@@ -1,19 +1,18 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Open_Sans, Poppins, JetBrains_Mono } from "next/font/google";
+import { Work_Sans, Outfit, JetBrains_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
-const openSans = Open_Sans({
+const workSans = Work_Sans({
   subsets: ["latin"],
-  variable: "--font-open-sans",
+  variable: "--font-work-sans",
   display: "swap",
 });
 
-const poppins = Poppins({
+const outfit = Outfit({
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  variable: "--font-poppins",
+  variable: "--font-outfit",
   display: "swap",
 });
 
@@ -24,8 +23,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Luxe Store - Premium E-commerce",
-  description: "Discover our curated collection of premium products",
+  title: "GreenHaven - Premium Plants & Seeds",
+  description: "Discover our curated collection of organic seeds and beautiful house plants",
 };
 
 export default function RootLayout({
@@ -37,7 +36,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body
-          className={`${openSans.variable} ${poppins.variable} ${jetbrainsMono.variable} antialiased`}
+          className={`${workSans.variable} ${outfit.variable} ${jetbrainsMono.variable} antialiased`}
         >
           <Providers>{children}</Providers>
         </body>

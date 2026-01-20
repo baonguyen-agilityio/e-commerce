@@ -11,9 +11,9 @@ import {
 } from "@/hooks/use-user";
 import { User, UserRole } from "@/types";
 import { DataTable } from "@/components/admin/data-table";
+import { StatsCard } from "@/components/admin/stats-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,6 +41,8 @@ import {
   Shield,
   Star,
   UserCog,
+  Leaf,
+  Sprout
 } from "lucide-react";
 import {
   AlertDialog,
@@ -60,23 +62,23 @@ const ROLE_CONFIG: Record<
 > = {
   [UserRole.CUSTOMER]: {
     label: "Customer",
-    icon: <UserCircle className="h-4 w-4" />,
-    color: "bg-slate-100 text-slate-600 border-slate-200",
+    icon: <Leaf className="h-4 w-4" />,
+    color: "bg-secondary text-foreground border-border",
   },
   [UserRole.STAFF]: {
     label: "Staff",
-    icon: <UserCog className="h-4 w-4" />,
-    color: "bg-blue-50 text-blue-700 border-blue-200",
+    icon: <Sprout className="h-4 w-4" />,
+    color: "bg-blue-100/50 text-blue-700 border-blue-200",
   },
   [UserRole.ADMIN]: {
     label: "Admin",
     icon: <ShieldCheck className="h-4 w-4" />,
-    color: "bg-amber-50 text-amber-700 border-amber-200",
+    color: "bg-amber-100/50 text-amber-700 border-amber-200",
   },
   [UserRole.SUPER_ADMIN]: {
     label: "Super Admin",
     icon: <Crown className="h-4 w-4" />,
-    color: "bg-purple-50 text-purple-700 border-purple-200",
+    color: "bg-purple-100/50 text-purple-700 border-purple-200",
   },
 };
 
@@ -152,31 +154,30 @@ export default function AdminUsersPage() {
         return (
           <div className="flex items-center gap-3">
             <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                role === UserRole.SUPER_ADMIN
-                  ? "bg-purple-50"
-                  : role === UserRole.ADMIN
-                  ? "bg-amber-50"
+              className={`flex h-10 w-10 items-center justify-center rounded-xl ${role === UserRole.SUPER_ADMIN
+                ? "bg-purple-100/50"
+                : role === UserRole.ADMIN
+                  ? "bg-amber-100/50"
                   : role === UserRole.STAFF
-                  ? "bg-blue-50"
-                  : "bg-slate-100"
-              }`}
+                    ? "bg-blue-100/50"
+                    : "bg-secondary"
+                }`}
             >
               {role === UserRole.SUPER_ADMIN ? (
                 <Crown className="h-5 w-5 text-purple-600" />
               ) : role === UserRole.ADMIN ? (
                 <ShieldCheck className="h-5 w-5 text-amber-600" />
               ) : role === UserRole.STAFF ? (
-                <UserCog className="h-5 w-5 text-blue-600" />
+                <Sprout className="h-5 w-5 text-blue-600" />
               ) : (
-                <UserCircle className="h-5 w-5 text-slate-500" />
+                <Leaf className="h-5 w-5 text-muted-foreground" />
               )}
             </div>
             <div>
-              <p className="font-medium text-slate-900 capitalize">
+              <p className="font-bold text-foreground capitalize">
                 {row.original.name || "Unnamed User"}
               </p>
-              <p className="text-xs text-slate-500 font-mono">
+              <p className="text-xs text-muted-foreground font-mono font-medium">
                 ID: {row.original.id}
               </p>
             </div>
@@ -188,9 +189,9 @@ export default function AdminUsersPage() {
       accessorKey: "email",
       header: "Email",
       cell: ({ row }) => (
-        <div className="flex items-center gap-2 text-slate-500">
+        <div className="flex items-center gap-2 text-muted-foreground">
           <Mail className="h-4 w-4" />
-          <span className="text-sm">{row.original.email}</span>
+          <span className="text-sm font-medium">{row.original.email}</span>
         </div>
       ),
     },
@@ -202,7 +203,7 @@ export default function AdminUsersPage() {
         return (
           <Badge className={config.color}>
             {config.icon}
-            <span className="ml-1">{config.label}</span>
+            <span className="ml-1 font-bold">{config.label}</span>
           </Badge>
         );
       },
@@ -214,17 +215,17 @@ export default function AdminUsersPage() {
         <Badge
           className={
             row.original.isBanned
-              ? "bg-red-50 text-red-700 border-red-200"
+              ? "bg-red-100/50 text-red-700 border-red-200"
               : row.original.isLocked
-              ? "bg-orange-50 text-orange-700 border-orange-200"
-              : "bg-green-50 text-green-700 border-green-200"
+                ? "bg-orange-100/50 text-orange-700 border-orange-200"
+                : "bg-green-100/50 text-green-700 border-green-200"
           }
         >
           {row.original.isBanned
             ? "Banned"
             : row.original.isLocked
-            ? "Locked"
-            : "Active"}
+              ? "Locked"
+              : "Active"}
         </Badge>
       ),
     },
@@ -232,7 +233,7 @@ export default function AdminUsersPage() {
       accessorKey: "createdAt",
       header: "Joined",
       cell: ({ row }) => (
-        <div className="flex items-center gap-2 text-slate-500">
+        <div className="flex items-center gap-2 text-muted-foreground font-medium">
           <Calendar className="h-4 w-4" />
           <span className="text-sm">
             {new Date(row.original.createdAt).toLocaleDateString("en-US", {
@@ -260,12 +261,12 @@ export default function AdminUsersPage() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 cursor-pointer"
+                className="h-8 w-8 cursor-pointer hover:bg-secondary hover:text-foreground rounded-lg"
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuContent align="end" className="w-52 bg-card border-border rounded-xl shadow-lg">
               {isCurrentUser ? (
                 <DropdownMenuItem
                   disabled
@@ -287,11 +288,11 @@ export default function AdminUsersPage() {
                   {/* Change Role Submenu */}
                   {availableRoles.length > 0 && (
                     <DropdownMenuSub>
-                      <DropdownMenuSubTrigger className="cursor-pointer">
+                      <DropdownMenuSubTrigger className="cursor-pointer focus:bg-secondary focus:text-foreground rounded-lg">
                         <Shield className="h-4 w-4 mr-2" />
                         Change Role
                       </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent>
+                      <DropdownMenuSubContent className="bg-card border-border rounded-xl">
                         {availableRoles.map((role) => {
                           const config = ROLE_CONFIG[role];
                           return (
@@ -300,7 +301,7 @@ export default function AdminUsersPage() {
                               onClick={() =>
                                 handleChangeRole(user.clerkId, role)
                               }
-                              className="cursor-pointer"
+                              className="cursor-pointer focus:bg-secondary focus:text-foreground rounded-lg"
                             >
                               {config.icon}
                               <span className="ml-2">{config.label}</span>
@@ -311,33 +312,33 @@ export default function AdminUsersPage() {
                     </DropdownMenuSub>
                   )}
 
-                  <DropdownMenuSeparator />
+                  <DropdownMenuSeparator className="bg-border" />
 
                   {/* Ban/Unban */}
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <DropdownMenuItem
                         onSelect={(e) => e.preventDefault()}
-                        className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                        className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50 rounded-lg"
                       >
                         <Ban className="h-4 w-4 mr-2" />
                         Ban User
                       </DropdownMenuItem>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="bg-card border-border rounded-[2rem]">
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Ban User</AlertDialogTitle>
-                        <AlertDialogDescription>
+                        <AlertDialogTitle className="font-heading">Ban User</AlertDialogTitle>
+                        <AlertDialogDescription className="text-muted-foreground">
                           Are you sure you want to ban {user.name || user.email}
                           ? This will prevent the user from signing in to your
                           application. This action can be undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel className="rounded-xl border-border">Cancel</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => handleToggleBan(user.clerkId)}
-                          className="bg-red-600 hover:bg-red-700"
+                          className="bg-red-600 hover:bg-red-700 rounded-xl"
                         >
                           Ban
                         </AlertDialogAction>
@@ -350,25 +351,25 @@ export default function AdminUsersPage() {
                     <AlertDialogTrigger asChild>
                       <DropdownMenuItem
                         onSelect={(e) => e.preventDefault()}
-                        className="cursor-pointer text-orange-600 focus:text-orange-600 focus:bg-orange-50"
+                        className="cursor-pointer text-orange-600 focus:text-orange-700 focus:bg-orange-50 rounded-lg"
                       >
                         <Lock className="h-4 w-4 mr-2" />
                         Lock User
                       </DropdownMenuItem>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="bg-card border-border rounded-[2rem]">
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Lock User</AlertDialogTitle>
-                        <AlertDialogDescription className="capitalize">
+                        <AlertDialogTitle className="font-heading">Lock User</AlertDialogTitle>
+                        <AlertDialogDescription className="capitalize text-muted-foreground">
                           Are you sure you want to lock <strong>{user.name || user.email}</strong>? This will prevent the user
                           from signing in to your application. This action can be undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel className="rounded-xl border-border">Cancel</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => handleToggleLock(user.clerkId)}
-                          className="bg-orange-600 hover:bg-orange-700"
+                          className="bg-orange-600 hover:bg-orange-700 rounded-xl"
                         >
                           Lock
                         </AlertDialogAction>
@@ -376,33 +377,33 @@ export default function AdminUsersPage() {
                     </AlertDialogContent>
                   </AlertDialog>
 
-                  <DropdownMenuSeparator />
+                  <DropdownMenuSeparator className="bg-border" />
 
                   {/* Delete */}
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <DropdownMenuItem
                         onSelect={(e) => e.preventDefault()}
-                        className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                        className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50 rounded-lg"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete User
                       </DropdownMenuItem>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="bg-card border-border rounded-[2rem]">
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Delete User</AlertDialogTitle>
-                        <AlertDialogDescription className="capitalize">
+                        <AlertDialogTitle className="font-heading">Delete User</AlertDialogTitle>
+                        <AlertDialogDescription className="capitalize text-muted-foreground">
                           Are you sure you want to delete <strong>{user.name || user.email}</strong>? This
                           action cannot be undone and will permanently remove
                           the user account.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel className="rounded-xl border-border">Cancel</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => handleDeleteUser(user.clerkId)}
-                          className="bg-red-600 hover:bg-red-700"
+                          className="bg-red-600 hover:bg-red-700 rounded-xl"
                         >
                           Delete
                         </AlertDialogAction>
@@ -431,10 +432,10 @@ export default function AdminUsersPage() {
       <div className="space-y-6">
         <div className="grid gap-4 md:grid-cols-4">
           {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-24 bg-slate-100" />
+            <Skeleton key={i} className="h-28 bg-secondary/50 rounded-[2rem]" />
           ))}
         </div>
-        <Skeleton className="h-[400px] bg-slate-100" />
+        <Skeleton className="h-[400px] bg-secondary/50 rounded-[2rem]" />
       </div>
     );
   }
@@ -443,58 +444,34 @@ export default function AdminUsersPage() {
     <div className="space-y-6">
       {/* Stats - 4 cards now */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="bg-white border-slate-200">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-50">
-              <Crown className="h-6 w-6 text-purple-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold font-mono text-slate-900">
-                {superAdminCount}
-              </p>
-              <p className="text-sm text-slate-500">Super Admins</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border-slate-200">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50">
-              <ShieldCheck className="h-6 w-6 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold font-mono text-slate-900">
-                {adminCount}
-              </p>
-              <p className="text-sm text-slate-500">Admins</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border-slate-200">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50">
-              <UserCog className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold font-mono text-slate-900">
-                {staffCount}
-              </p>
-              <p className="text-sm text-slate-500">Staff</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border-slate-200">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100">
-              <Users className="h-6 w-6 text-slate-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold font-mono text-slate-900">
-                {customerCount}
-              </p>
-              <p className="text-sm text-slate-500">Customers</p>
-            </div>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Super Admins"
+          value={superAdminCount}
+          icon={Crown}
+          description="System owners"
+          iconClassName="bg-purple-100/50 text-purple-600"
+        />
+        <StatsCard
+          title="Admins"
+          value={adminCount}
+          icon={ShieldCheck}
+          description="Administrators"
+          iconClassName="bg-amber-100/50 text-amber-600"
+        />
+        <StatsCard
+          title="Staff"
+          value={staffCount}
+          icon={UserCog}
+          description="Support staff"
+          iconClassName="bg-blue-100/50 text-blue-600"
+        />
+        <StatsCard
+          title="Customers"
+          value={customerCount}
+          icon={Users}
+          description="Registered users"
+          iconClassName="bg-secondary/30 text-muted-foreground"
+        />
       </div>
 
       {/* Data Table */}

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, FolderTree, FileText } from "lucide-react";
+import { Loader2, Sprout, FileText } from "lucide-react";
 
 interface CategoryFormProps {
   category?: Category;
@@ -44,8 +44,8 @@ export function CategoryForm({
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Name */}
       <div className="space-y-2">
-        <Label htmlFor="name" className="text-slate-700 flex items-center gap-2">
-          <FolderTree className="h-4 w-4 text-slate-400" />
+        <Label htmlFor="name" className="text-foreground flex items-center gap-2">
+          <Sprout className="h-4 w-4 text-primary" />
           Category Name
         </Label>
         <Input
@@ -53,15 +53,15 @@ export function CategoryForm({
           placeholder="Enter category name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="bg-slate-50 border-slate-200 focus:bg-white focus:border-amber-300 focus:ring-amber-100"
+          className="bg-secondary/20 border-border focus:bg-background focus:border-primary focus:ring-primary/20 rounded-xl"
         />
-        {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
+        {errors.name && <p className="text-sm text-red-500 font-medium">{errors.name}</p>}
       </div>
 
       {/* Description */}
       <div className="space-y-2">
-        <Label htmlFor="description" className="text-slate-700 flex items-center gap-2">
-          <FileText className="h-4 w-4 text-slate-400" />
+        <Label htmlFor="description" className="text-foreground flex items-center gap-2">
+          <FileText className="h-4 w-4 text-primary" />
           Description
         </Label>
         <Textarea
@@ -70,14 +70,14 @@ export function CategoryForm({
           value={description}
           onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
           rows={3}
-          className="bg-slate-50 border-slate-200 focus:bg-white focus:border-amber-300 focus:ring-amber-100 resize-none"
+          className="bg-secondary/20 border-border focus:bg-background focus:border-primary focus:ring-primary/20 resize-none rounded-xl"
         />
       </div>
 
       {/* Submit Button */}
       <Button
         type="submit"
-        className="w-full cursor-pointer bg-amber-500 hover:bg-amber-600 text-white shadow-sm"
+        className="w-full cursor-pointer bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 rounded-xl h-11 font-bold tracking-wide"
         disabled={isSubmitting}
       >
         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

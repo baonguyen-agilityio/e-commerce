@@ -1,33 +1,20 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@clerk/nextjs";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
 export function useOrders() {
-  const { isLoaded, isSignedIn, getToken } = useAuth();
   return useQuery({
     queryKey: ["orders"],
-    queryFn: async () => {
-      const token = await getToken();
-      api.setToken(token);
-      return api.getOrders();
-    },
-    enabled: isLoaded && isSignedIn === true,
+    queryFn: () => api.getOrders(),
   });
 }
 
 export function useOrdersByUser() {
-  const { isLoaded, isSignedIn, getToken } = useAuth();
   return useQuery({
     queryKey: ["orders-by-user"],
-    queryFn: async () => {
-      const token = await getToken();
-      api.setToken(token);
-      return api.getOrdersByUser();
-    },
-    enabled: isLoaded && isSignedIn === true,
+    queryFn: () => api.getOrdersByUser(),
   });
 }
 

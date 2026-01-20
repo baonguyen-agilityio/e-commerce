@@ -39,10 +39,10 @@ export function ProductForm({
 }: ProductFormProps) {
   const [name, setName] = useState(product?.name || "");
   const [description, setDescription] = useState(product?.description || "");
-  const [price, setPrice] = useState(product?.price || 0);
-  const [stock, setStock] = useState(product?.stock || 0);
+  const [price, setPrice] = useState(Number(product?.price) || 0);
+  const [stock, setStock] = useState(Number(product?.stock) || 0);
   const [imageUrl, setImageUrl] = useState(product?.imageUrl || "");
-  const [categoryId, setCategoryId] = useState(product?.categoryId || 0);
+  const [categoryId, setCategoryId] = useState(Number(product?.categoryId) || 0);
   const [isActive, setIsActive] = useState(product?.isActive ?? true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -62,10 +62,10 @@ export function ProductForm({
       onSubmit({
         name,
         description: description || undefined,
-        price,
-        stock,
+        price: Number(price),
+        stock: Number(stock),
         imageUrl: imageUrl || undefined,
-        categoryId,
+        categoryId: Number(categoryId),
         isActive,
       });
     }
@@ -75,8 +75,8 @@ export function ProductForm({
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Name */}
       <div className="space-y-2">
-        <Label htmlFor="name" className="text-slate-700 flex items-center gap-2">
-          <Package className="h-4 w-4 text-slate-400" />
+        <Label htmlFor="name" className="text-foreground flex items-center gap-2">
+          <Package className="h-4 w-4 text-primary" />
           Product Name
         </Label>
         <Input
@@ -84,14 +84,14 @@ export function ProductForm({
           placeholder="Enter product name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="bg-slate-50 border-slate-200 focus:bg-white focus:border-amber-300 focus:ring-amber-100"
+          className="bg-secondary/20 border-border focus:bg-background focus:border-primary focus:ring-primary/20 rounded-xl"
         />
-        {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
+        {errors.name && <p className="text-sm text-red-500 font-medium">{errors.name}</p>}
       </div>
 
       {/* Description */}
       <div className="space-y-2">
-        <Label htmlFor="description" className="text-slate-700">
+        <Label htmlFor="description" className="text-foreground">
           Description
         </Label>
         <Textarea
@@ -100,15 +100,15 @@ export function ProductForm({
           value={description}
           onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
           rows={3}
-          className="bg-slate-50 border-slate-200 focus:bg-white focus:border-amber-300 focus:ring-amber-100 resize-none"
+          className="bg-secondary/20 border-border focus:bg-background focus:border-primary focus:ring-primary/20 resize-none rounded-xl"
         />
       </div>
 
       {/* Price & Stock */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="price" className="text-slate-700 flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-slate-400" />
+          <Label htmlFor="price" className="text-foreground flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-primary" />
             Price
           </Label>
           <Input
@@ -118,14 +118,14 @@ export function ProductForm({
             placeholder="0.00"
             value={price || ""}
             onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
-            className="bg-slate-50 border-slate-200 focus:bg-white focus:border-amber-300 focus:ring-amber-100 font-mono"
+            className="bg-secondary/20 border-border focus:bg-background focus:border-primary focus:ring-primary/20 font-mono font-bold rounded-xl"
           />
-          {errors.price && <p className="text-sm text-red-500">{errors.price}</p>}
+          {errors.price && <p className="text-sm text-red-500 font-medium">{errors.price}</p>}
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="stock" className="text-slate-700 flex items-center gap-2">
-            <Layers className="h-4 w-4 text-slate-400" />
+          <Label htmlFor="stock" className="text-foreground flex items-center gap-2">
+            <Layers className="h-4 w-4 text-primary" />
             Stock
           </Label>
           <Input
@@ -134,43 +134,43 @@ export function ProductForm({
             placeholder="0"
             value={stock || ""}
             onChange={(e) => setStock(parseInt(e.target.value) || 0)}
-            className="bg-slate-50 border-slate-200 focus:bg-white focus:border-amber-300 focus:ring-amber-100 font-mono"
+            className="bg-secondary/20 border-border focus:bg-background focus:border-primary focus:ring-primary/20 font-mono font-bold rounded-xl"
           />
-          {errors.stock && <p className="text-sm text-red-500">{errors.stock}</p>}
+          {errors.stock && <p className="text-sm text-red-500 font-medium">{errors.stock}</p>}
         </div>
       </div>
 
       {/* Category */}
       <div className="space-y-2">
-        <Label htmlFor="category" className="text-slate-700">
+        <Label htmlFor="category" className="text-foreground">
           Category
         </Label>
         <Select
           value={categoryId ? String(categoryId) : undefined}
           onValueChange={(value) => setCategoryId(Number(value))}
         >
-          <SelectTrigger className="cursor-pointer bg-slate-50 border-slate-200 focus:bg-white focus:border-amber-300 focus:ring-amber-100">
+          <SelectTrigger className="cursor-pointer bg-secondary/20 border-border focus:bg-background focus:border-primary focus:ring-primary/20 rounded-xl">
             <SelectValue placeholder="Select a category" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="rounded-xl border-border bg-card">
             {categories?.map((category) => (
               <SelectItem
                 key={category.id}
                 value={String(category.id)}
-                className="cursor-pointer"
+                className="cursor-pointer focus:bg-secondary focus:text-foreground rounded-lg"
               >
                 {category.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        {errors.categoryId && <p className="text-sm text-red-500">{errors.categoryId}</p>}
+        {errors.categoryId && <p className="text-sm text-red-500 font-medium">{errors.categoryId}</p>}
       </div>
 
       {/* Image URL */}
       <div className="space-y-2">
-        <Label htmlFor="imageUrl" className="text-slate-700 flex items-center gap-2">
-          <ImageIcon className="h-4 w-4 text-slate-400" />
+        <Label htmlFor="imageUrl" className="text-foreground flex items-center gap-2">
+          <ImageIcon className="h-4 w-4 text-primary" />
           Image URL
         </Label>
         <Input
@@ -178,22 +178,22 @@ export function ProductForm({
           placeholder="https://example.com/image.jpg"
           value={imageUrl}
           onChange={(e) => setImageUrl(e.target.value)}
-          className="bg-slate-50 border-slate-200 focus:bg-white focus:border-amber-300 focus:ring-amber-100"
+          className="bg-secondary/20 border-border focus:bg-background focus:border-primary focus:ring-primary/20 rounded-xl"
         />
       </div>
 
       {/* Active Status */}
-      <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 border border-slate-200">
+      <div className="flex items-center gap-3 p-4 rounded-xl bg-secondary/10 border border-border">
         <Checkbox
           id="isActive"
           checked={isActive}
           onCheckedChange={(checked) => setIsActive(checked === true)}
-          className="cursor-pointer data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+          className="cursor-pointer data-[state=checked]:bg-primary data-[state=checked]:border-primary border-muted-foreground"
         />
         <div className="flex items-center gap-2">
-          <Eye className="h-4 w-4 text-slate-400" />
-          <Label htmlFor="isActive" className="cursor-pointer text-slate-700">
-            Publish product (visible in store)
+          <Eye className="h-4 w-4 text-muted-foreground" />
+          <Label htmlFor="isActive" className="cursor-pointer text-foreground font-medium">
+            Publish product (visible in garden)
           </Label>
         </div>
       </div>
@@ -201,7 +201,7 @@ export function ProductForm({
       {/* Submit Button */}
       <Button
         type="submit"
-        className="w-full cursor-pointer bg-amber-500 hover:bg-amber-600 text-white shadow-sm"
+        className="w-full cursor-pointer bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 rounded-xl h-11 font-bold tracking-wide"
         disabled={isSubmitting}
       >
         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

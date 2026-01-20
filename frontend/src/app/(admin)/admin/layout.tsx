@@ -25,19 +25,19 @@ export default function AdminLayout({
   return (
     <TooltipProvider delayDuration={0}>
       <SidebarProvider>
-        <div className="flex min-h-screen w-full bg-slate-50">
+        <div className="flex min-h-screen w-full bg-background/50">
           <AdminSidebar />
-          <SidebarInset className="flex flex-col">
+          <SidebarInset className="flex flex-col bg-background/50">
             {/* Header */}
-            <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b border-slate-200 bg-white/80 backdrop-blur-sm px-6">
-              <SidebarTrigger className="cursor-pointer text-slate-600 hover:text-slate-900 hover:bg-slate-100" />
-              <Separator orientation="vertical" className="h-6 bg-slate-200" />
+            <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b border-border/50 bg-background/80 backdrop-blur-xl px-4 md:px-8">
+              <SidebarTrigger className="cursor-pointer text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl transition-colors" />
+              <Separator orientation="vertical" className="h-6 bg-border" />
               <div className="flex flex-col">
-                <h1 className="text-lg font-semibold leading-none text-slate-900">
+                <h1 className="text-xl font-heading font-bold leading-none text-foreground tracking-tight">
                   {pageInfo.title}
                 </h1>
                 {pageInfo.description && (
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm font-medium text-muted-foreground mt-0.5">
                     {pageInfo.description}
                   </p>
                 )}
@@ -45,7 +45,7 @@ export default function AdminLayout({
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-auto bg-slate-50">
+            <main className="flex-1 overflow-auto">
               <div className="p-6">{children}</div>
             </main>
           </SidebarInset>
