@@ -3,12 +3,21 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { useCurrentUser } from "./use-user";
 
 export function useCart() {
-  return useQuery({
+  const { data: user, isLoading: isUserLoading } = useCurrentUser();
+
+  const query = useQuery({
     queryKey: ["cart"],
     queryFn: () => api.getCart(),
+    enabled: !!user,
   });
+
+  return {
+    ...query,
+    isLoading: isUserLoading || query.isLoading,
+  };
 }
 
 export function useAddToCart() {
@@ -47,8 +56,9 @@ export function useRemoveFromCart() {
 
   return useMutation({
     mutationFn: (itemId: number) => api.removeFromCart(itemId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cart"] });
+    onSuccess: (updatedCart) => {
+      // Update cache with returned cart data instead of refetching
+      queryClient.setQueryData(["cart"], updatedCart);
       toast.success("Removed from cart");
     },
     onError: (error: Error) => {
@@ -62,8 +72,9 @@ export function useClearCart() {
 
   return useMutation({
     mutationFn: () => api.clearCart(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cart"] });
+    onSuccess: (updatedCart) => {
+      // Update cache with returned cart data instead of refetching
+      queryClient.setQueryData(["cart"], updatedCart);
     },
   });
 }

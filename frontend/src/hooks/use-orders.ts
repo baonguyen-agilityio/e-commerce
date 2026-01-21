@@ -3,19 +3,36 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { useCurrentUser } from "./use-user";
 
 export function useOrders() {
-  return useQuery({
+  const { data: user, isLoading: isUserLoading } = useCurrentUser();
+
+  const query = useQuery({
     queryKey: ["orders"],
     queryFn: () => api.getOrders(),
+    enabled: !!user,
   });
+
+  return {
+    ...query,
+    isLoading: isUserLoading || query.isLoading,
+  };
 }
 
 export function useOrdersByUser() {
-  return useQuery({
+  const { data: user, isLoading: isUserLoading } = useCurrentUser();
+
+  const query = useQuery({
     queryKey: ["orders-by-user"],
     queryFn: () => api.getOrdersByUser(),
+    enabled: !!user,
   });
+
+  return {
+    ...query,
+    isLoading: isUserLoading || query.isLoading,
+  };
 }
 
 export function useOrder(id: number) {
@@ -34,6 +51,7 @@ export function useCheckout() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["orders-by-user"] });
       toast.success("Order placed successfully!");
     },
     onError: (error: Error) => {

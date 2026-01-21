@@ -1,7 +1,7 @@
 export abstract class BaseError extends Error {
   abstract statusCode: number;
   abstract code: string;
-  
+
   constructor(message: string) {
     super(message);
     this.name = this.constructor.name;
@@ -19,7 +19,7 @@ export abstract class BaseError extends Error {
 export class BadRequestError extends BaseError {
   statusCode = 400;
   code = 'BAD_REQUEST';
-  
+
   constructor(message: string, code?: string) {
     super(message);
     if (code) this.code = code;
@@ -39,9 +39,9 @@ export class ForbiddenError extends BaseError {
 export class NotFoundError extends BaseError {
   statusCode = 404;
   code = 'NOT_FOUND';
-  
+
   constructor(resource: string = 'Resource') {
-    super(`${resource} not found`);
+    super(resource);
   }
 }
 
@@ -58,7 +58,7 @@ export class UnprocessableError extends BaseError {
 export class RateLimitError extends BaseError {
   statusCode = 429;
   code = 'RATE_LIMIT_EXCEEDED';
-  
+
   constructor(message: string = 'Too many requests') {
     super(message);
   }
@@ -67,7 +67,7 @@ export class RateLimitError extends BaseError {
 export class InternalError extends BaseError {
   statusCode = 500;
   code = 'INTERNAL_ERROR';
-  
+
   constructor(message: string = 'An unexpected error occurred') {
     super(message);
   }
@@ -77,7 +77,7 @@ export class ValidationError extends BaseError {
   statusCode = 400;
   code = 'VALIDATION_ERROR';
   details: Array<{ field: string; message: string }>;
-  
+
   constructor(details: Array<{ field: string; message: string }>) {
     super(details[0]?.message || 'Validation failed');
     this.details = details;

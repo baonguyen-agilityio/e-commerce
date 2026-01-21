@@ -15,6 +15,6 @@ export interface ICartService {
     cartItemId: number,
     quantity: number,
   ): Promise<CartItem | null>;
-  removeItemFromCart(clerkId: string, cartItemId: number): Promise<boolean>;
-  clearCart(clerkId: string): Promise<boolean>;
+  removeItemFromCart(clerkId: string, cartItemId: number): Promise<CartWithTotal>;
+  clearCart(clerkId: string): Promise<CartWithTotal>;
 }

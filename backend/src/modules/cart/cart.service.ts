@@ -13,7 +13,7 @@ export class CartService implements ICartService {
     private readonly cartItemRepository: Repository<CartItem>,
     private readonly productRepository: Repository<Product>,
     private readonly userRepository: Repository<User>,
-  ) {}
+  ) { }
 
   private async findUserOrThrow(clerkId: string): Promise<User> {
     const user = await this.userRepository.findOne({
@@ -129,7 +129,7 @@ export class CartService implements ICartService {
     return this.cartItemRepository.save(cartItem);
   }
 
-  async removeItemFromCart(clerkId: string, cartItemId: number): Promise<boolean> {
+  async removeItemFromCart(clerkId: string, cartItemId: number): Promise<CartWithTotal> {
     const user = await this.findUserOrThrow(clerkId);
     const cart = await this.getOrCreateCart(user.id);
 
@@ -142,14 +142,16 @@ export class CartService implements ICartService {
     }
 
     await this.cartItemRepository.delete(cartItem.id);
-    return true;
+
+    return this.getCartByClerkId(clerkId);
   }
 
-  async clearCart(clerkId: string): Promise<boolean> {
+  async clearCart(clerkId: string): Promise<CartWithTotal> {
     const user = await this.findUserOrThrow(clerkId);
     const cart = await this.getOrCreateCart(user.id);
 
     await this.cartItemRepository.delete({ cartId: cart.id });
-    return true;
+
+    return this.getCartByClerkId(clerkId);
   }
 }

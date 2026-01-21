@@ -57,6 +57,9 @@ interface DataTableProps<TData, TValue> {
     pageSize: number;
   }) => void;
   onRowClick?: (data: TData) => void;
+  actionElement?: React.ReactNode;
+  filterElement?: React.ReactNode;
+  onSearch?: (value: string) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -68,6 +71,9 @@ export function DataTable<TData, TValue>({
   pagination,
   onPaginationChange,
   onRowClick,
+  actionElement,
+  filterElement,
+  onSearch,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -83,10 +89,12 @@ export function DataTable<TData, TValue>({
   const isServerSide = pagination !== undefined && pageCount !== undefined;
 
   useEffect(() => {
-    if (searchKey) {
+    if (onSearch) {
+      onSearch(debouncedSearch);
+    } else if (searchKey) {
       table.getColumn(searchKey)?.setFilterValue(debouncedSearch);
     }
-  }, [debouncedSearch]);
+  }, [debouncedSearch, onSearch, searchKey]);
 
   const table = useReactTable({
     data,
@@ -138,37 +146,41 @@ export function DataTable<TData, TValue>({
               />
             </div>
           )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-10 gap-2 border-border text-muted-foreground hover:text-foreground hover:border-primary cursor-pointer hover:bg-secondary rounded-xl"
-              >
-                <Settings2 className="h-4 w-4" />
-                Columns
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-card border-border rounded-xl">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize cursor-pointer focus:bg-secondary focus:text-foreground"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {filterElement}
+          <div className="flex items-center gap-2 ml-auto">
+            {actionElement}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-10 gap-2 border-border text-muted-foreground hover:text-foreground hover:border-primary cursor-pointer hover:bg-secondary rounded-xl"
+                >
+                  <Settings2 className="h-4 w-4" />
+                  Columns
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-card border-border rounded-xl">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize cursor-pointer focus:bg-secondary focus:text-foreground"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) =>
+                          column.toggleVisibility(!!value)
+                        }
+                      >
+                        {column.id}
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </CardHeader>
 
@@ -204,7 +216,7 @@ export function DataTable<TData, TValue>({
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
-                    className="border-b border-border/30 hover:bg-secondary/20 transition-colors cursor-pointer"
+                    className={`border-b border-border/30 hover:bg-secondary/20 transition-colors ${onRowClick ? "cursor-pointer" : ""}`}
                     onClick={() => onRowClick?.(row.original)}
                   >
                     {row.getVisibleCells().map((cell) => (

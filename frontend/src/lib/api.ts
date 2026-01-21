@@ -143,12 +143,12 @@ class ApiClient {
     });
   }
 
-  async removeFromCart(itemId: number): Promise<void> {
-    await this.fetch<void>(`/cart/items/${itemId}`, { method: "DELETE" });
+  async removeFromCart(itemId: number): Promise<Cart> {
+    return this.fetch<Cart>(`/cart/items/${itemId}`, { method: "DELETE" });
   }
 
-  async clearCart(): Promise<void> {
-    await this.fetch<void>("/cart", { method: "DELETE" });
+  async clearCart(): Promise<Cart> {
+    return this.fetch<Cart>("/cart", { method: "DELETE" });
   }
 
   // Orders
@@ -188,6 +188,10 @@ class ApiClient {
 
   async deleteUser(clerkId: string): Promise<void> {
     await this.fetch<void>(`/users/${clerkId}`, { method: "DELETE" });
+  }
+
+  async restoreUser(clerkId: string): Promise<User> {
+    return this.fetch<User>(`/users/restore/${clerkId}`, { method: "POST" });
   }
 
   async toggleBan(clerkId: string): Promise<User> {

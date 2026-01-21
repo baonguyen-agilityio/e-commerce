@@ -42,8 +42,9 @@ export function useUpdateProduct() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<Product> }) =>
       api.updateProduct(id, data),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["product", variables.id] });
       toast.success("Product updated successfully");
     },
     onError: (error: Error) => {
@@ -57,8 +58,9 @@ export function useDeleteProduct() {
 
   return useMutation({
     mutationFn: (id: number) => api.deleteProduct(id),
-    onSuccess: () => {
+    onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["product", id] });
       toast.success("Product deleted successfully");
     },
     onError: (error: Error) => {

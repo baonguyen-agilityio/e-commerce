@@ -26,6 +26,12 @@ export function createUserRoutes(controller: UserController): Router {
   );
 
   router.post(
+    "/restore/:clerkId",
+    requireAuth(UserRole.ADMIN),
+    controller.restoreUser,
+  );
+
+  router.post(
     "/lock/:clerkId",
     requireAuth(UserRole.ADMIN),
     controller.toggleLock,

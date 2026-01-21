@@ -28,6 +28,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, MoreHorizontal, Pencil, Trash2, Sprout, Hash, Leaf } from "lucide-react";
 
@@ -39,6 +49,7 @@ export default function AdminCategoriesPage() {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
 
   const handleCreate = async (data: { name: string; description?: string }) => {
     await createCategory.mutateAsync(data);
@@ -52,9 +63,10 @@ export default function AdminCategoriesPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (confirm("Are you sure you want to delete this category?")) {
-      await deleteCategory.mutateAsync(id);
+  const handleDelete = async () => {
+    if (deletingCategory) {
+      await deleteCategory.mutateAsync(deletingCategory.id);
+      setDeletingCategory(null);
     }
   };
 
@@ -118,7 +130,7 @@ export default function AdminCategoriesPage() {
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-border" />
             <DropdownMenuItem
-              onClick={() => handleDelete(row.original.id)}
+              onClick={() => setDeletingCategory(row.original)}
               className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50 rounded-lg"
             >
               <Trash2 className="h-4 w-4 mr-2" />
@@ -163,36 +175,34 @@ export default function AdminCategoriesPage() {
         />
       </div>
 
-      {/* Header with Add Button */}
-      <div className="flex items-center justify-end">
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer shadow-lg shadow-primary/20 rounded-xl h-11 px-6 font-bold">
-              <Plus className="h-4 w-4" />
-              Add Category
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md bg-card border-border rounded-[2rem]">
-            <DialogHeader>
-              <DialogTitle className="text-foreground font-heading text-2xl">Add New Category</DialogTitle>
-              <DialogDescription className="text-muted-foreground">
-                Create a new collection for your garden.
-              </DialogDescription>
-            </DialogHeader>
-            <CategoryForm
-              onSubmit={handleCreate}
-              isSubmitting={createCategory.isPending}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
-
       {/* Data Table */}
       <DataTable
         columns={columns}
         data={categories || []}
         searchKey="name"
         searchPlaceholder="Search categories..."
+        actionElement={
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer shadow-lg shadow-primary/20 rounded-xl h-10 px-4 font-bold">
+                <Plus className="h-4 w-4" />
+                Add Category
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md bg-card border-border rounded-[2rem]">
+              <DialogHeader>
+                <DialogTitle className="text-foreground font-heading text-2xl">Add New Category</DialogTitle>
+                <DialogDescription className="text-muted-foreground">
+                  Create a new collection for your garden.
+                </DialogDescription>
+              </DialogHeader>
+              <CategoryForm
+                onSubmit={handleCreate}
+                isSubmitting={createCategory.isPending}
+              />
+            </DialogContent>
+          </Dialog>
+        }
       />
 
       {/* Edit Dialog */}
@@ -216,6 +226,31 @@ export default function AdminCategoriesPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog
+        open={!!deletingCategory}
+        onOpenChange={(open: boolean) => !open && setDeletingCategory(null)}
+      >
+        <AlertDialogContent className="bg-card border-border rounded-[2rem]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground font-heading">Delete Category</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              Are you sure you want to remove &quot;{deletingCategory?.name}
+              &quot;? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="cursor-pointer rounded-xl border-border hover:bg-secondary hover:text-foreground">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700 cursor-pointer rounded-xl"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

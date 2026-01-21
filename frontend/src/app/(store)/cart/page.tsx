@@ -36,8 +36,8 @@ export default function CartPage() {
 
   const handleCheckout = async () => {
     try {
-      await checkout.mutateAsync();
-      router.push("/orders");
+      const response = await checkout.mutateAsync();
+      router.push(`/checkout/success?orderId=${response.order.id}`);
     } catch (error) {
       // Error handled in hook
     }

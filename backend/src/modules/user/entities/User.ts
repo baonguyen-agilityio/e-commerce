@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   OneToOne,
   OneToMany,
   BeforeInsert,
@@ -65,10 +66,13 @@ export class User {
   @CreateDateColumn()
   createdAt: Date;
 
-  @OneToOne(() => Cart, (cart) => cart.user, {onDelete: "CASCADE"})
+  @DeleteDateColumn()
+  deletedAt: Date | null;
+
+  @OneToOne(() => Cart, (cart) => cart.user, { onDelete: "CASCADE" })
   cart: Cart;
 
-  @OneToMany(() => Order, (order) => order.user, {onDelete: "CASCADE"})
+  @OneToMany(() => Order, (order) => order.user, { onDelete: "CASCADE" })
   orders: Order[];
 
   @BeforeInsert()

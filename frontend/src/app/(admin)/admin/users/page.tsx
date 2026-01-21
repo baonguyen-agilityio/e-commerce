@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
+
 import { ColumnDef } from "@tanstack/react-table";
 import {
   useChangeRole,
   useCurrentUser,
   useDeleteUser,
+  useRestoreUser,
   useToggleBan,
   useToggleLock,
   useUsers,
@@ -13,6 +16,7 @@ import { User, UserRole } from "@/types";
 import { DataTable } from "@/components/admin/data-table";
 import { StatsCard } from "@/components/admin/stats-card";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -42,7 +46,9 @@ import {
   Star,
   UserCog,
   Leaf,
-  Sprout
+  Sprout,
+  RotateCcw,
+  Archive,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -94,8 +100,11 @@ export default function AdminUsersPage() {
   const { data: currentUser } = useCurrentUser();
   const { mutate: changeRole } = useChangeRole();
   const { mutate: deleteUser } = useDeleteUser();
+  const { mutate: restoreUser } = useRestoreUser();
   const { mutate: toggleBan } = useToggleBan();
   const { mutate: toggleLock } = useToggleLock();
+
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
 
   const handleChangeRole = (clerkId: string, role: UserRole) => {
     changeRole({ clerkId, role });
@@ -109,18 +118,21 @@ export default function AdminUsersPage() {
     toggleLock(clerkId);
   };
 
-  const handleDeleteUser = (clerkId: string) => {
-    deleteUser(clerkId);
+  const handleDeleteUser = () => {
+    if (deletingUser) {
+      deleteUser(deletingUser.clerkId);
+      setDeletingUser(null);
+    }
   };
 
   // Stats
   const superAdminCount = users.filter(
-    (u) => u.role === UserRole.SUPER_ADMIN,
+    (u: User) => u.role === UserRole.SUPER_ADMIN,
   ).length;
-  const adminCount = users.filter((u) => u.role === UserRole.ADMIN).length;
-  const staffCount = users.filter((u) => u.role === UserRole.STAFF).length;
+  const adminCount = users.filter((u: User) => u.role === UserRole.ADMIN).length;
+  const staffCount = users.filter((u: User) => u.role === UserRole.STAFF).length;
   const customerCount = users.filter(
-    (u) => u.role === UserRole.CUSTOMER,
+    (u: User) => u.role === UserRole.CUSTOMER,
   ).length;
 
   // Helper to check if current user can manage target user
@@ -149,34 +161,33 @@ export default function AdminUsersPage() {
       accessorKey: "name",
       header: "User",
       cell: ({ row }) => {
-        const role = row.original.role;
-        const config = ROLE_CONFIG[role];
+        const name = row.original.name || row.original.email;
+        const initials = name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2);
+
         return (
           <div className="flex items-center gap-3">
-            <div
-              className={`flex h-10 w-10 items-center justify-center rounded-xl ${role === UserRole.SUPER_ADMIN
-                ? "bg-purple-100/50"
-                : role === UserRole.ADMIN
-                  ? "bg-amber-100/50"
-                  : role === UserRole.STAFF
-                    ? "bg-blue-100/50"
-                    : "bg-secondary"
-                }`}
-            >
-              {role === UserRole.SUPER_ADMIN ? (
-                <Crown className="h-5 w-5 text-purple-600" />
-              ) : role === UserRole.ADMIN ? (
-                <ShieldCheck className="h-5 w-5 text-amber-600" />
-              ) : role === UserRole.STAFF ? (
-                <Sprout className="h-5 w-5 text-blue-600" />
-              ) : (
-                <Leaf className="h-5 w-5 text-muted-foreground" />
-              )}
-            </div>
-            <div>
-              <p className="font-bold text-foreground capitalize">
-                {row.original.name || "Unnamed User"}
-              </p>
+            <Avatar className="h-11 w-11 border-2 border-border shadow-sm">
+              <AvatarFallback className="text-sm font-bold bg-gradient-to-br from-primary/20 to-secondary text-primary uppercase">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-card-foreground truncate max-w-[200px]">
+                  {row.original.name || row.original.email}
+                </span>
+                {row.original.deletedAt && (
+                  <Badge variant="destructive" className="ml-2 bg-red-100 text-red-700 border-red-200 font-bold text-xs">
+                    <Archive className="h-3 w-3 mr-1" />
+                    Deleted
+                  </Badge>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground font-mono font-medium">
                 ID: {row.original.id}
               </p>
@@ -211,23 +222,33 @@ export default function AdminUsersPage() {
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => (
-        <Badge
-          className={
-            row.original.isBanned
-              ? "bg-red-100/50 text-red-700 border-red-200"
-              : row.original.isLocked
-                ? "bg-orange-100/50 text-orange-700 border-orange-200"
-                : "bg-green-100/50 text-green-700 border-green-200"
-          }
-        >
-          {row.original.isBanned
-            ? "Banned"
-            : row.original.isLocked
-              ? "Locked"
-              : "Active"}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        const isBanned = row.original.isBanned;
+        const isLocked = row.original.isLocked;
+
+        if (!isBanned && !isLocked) {
+          return (
+            <Badge className="bg-green-100/50 text-green-700 border-green-200">
+              Active
+            </Badge>
+          );
+        }
+
+        return (
+          <div className="flex flex-wrap gap-2">
+            {isBanned && (
+              <Badge className="bg-red-100/50 text-red-700 border-red-200">
+                Banned
+              </Badge>
+            )}
+            {isLocked && (
+              <Badge className="bg-orange-100/50 text-orange-700 border-orange-200">
+                Locked
+              </Badge>
+            )}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "createdAt",
@@ -285,131 +306,139 @@ export default function AdminUsersPage() {
                 </DropdownMenuItem>
               ) : canManage ? (
                 <>
-                  {/* Change Role Submenu */}
-                  {availableRoles.length > 0 && (
-                    <DropdownMenuSub>
-                      <DropdownMenuSubTrigger className="cursor-pointer focus:bg-secondary focus:text-foreground rounded-lg">
-                        <Shield className="h-4 w-4 mr-2" />
-                        Change Role
-                      </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent className="bg-card border-border rounded-xl">
-                        {availableRoles.map((role) => {
-                          const config = ROLE_CONFIG[role];
-                          return (
-                            <DropdownMenuItem
-                              key={role}
-                              onClick={() =>
-                                handleChangeRole(user.clerkId, role)
-                              }
-                              className="cursor-pointer focus:bg-secondary focus:text-foreground rounded-lg"
+                  {/* If user is deleted, ONLY show Restore */}
+                  {user.deletedAt ? (
+                    <DropdownMenuItem
+                      onClick={() => restoreUser(user.clerkId)}
+                      className="cursor-pointer text-green-600 focus:text-green-700 focus:bg-green-50 rounded-lg"
+                    >
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Restore User
+                    </DropdownMenuItem>
+                  ) : (
+                    /* Active User Actions */
+                    <>
+                      {/* Change Role Submenu */}
+                      {availableRoles.length > 0 && (
+                        <DropdownMenuSub>
+                          <DropdownMenuSubTrigger className="cursor-pointer focus:bg-secondary focus:text-foreground rounded-lg">
+                            <Shield className="h-4 w-4 mr-2" />
+                            Change Role
+                          </DropdownMenuSubTrigger>
+                          <DropdownMenuSubContent className="bg-card border-border rounded-xl">
+                            {availableRoles.map((role) => {
+                              const config = ROLE_CONFIG[role];
+                              return (
+                                <DropdownMenuItem
+                                  key={role}
+                                  onClick={() =>
+                                    handleChangeRole(user.clerkId, role)
+                                  }
+                                  className="cursor-pointer focus:bg-secondary focus:text-foreground rounded-lg"
+                                >
+                                  {config.icon}
+                                  <span className="ml-2">{config.label}</span>
+                                </DropdownMenuItem>
+                              );
+                            })}
+                          </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+                      )}
+
+                      <DropdownMenuSeparator className="bg-border" />
+
+                      {/* Ban/Unban */}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <DropdownMenuItem
+                            onSelect={(e) => e.preventDefault()}
+                            className={`cursor-pointer rounded-lg ${isBanned
+                              ? "text-green-600 focus:text-green-700 focus:bg-green-50"
+                              : "text-red-600 focus:text-red-700 focus:bg-red-50"
+                              }`}
+                          >
+                            {isBanned ? <UserCheck className="h-4 w-4 mr-2" /> : <Ban className="h-4 w-4 mr-2" />}
+                            {isBanned ? "Unban User" : "Ban User"}
+                          </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="bg-card border-border rounded-[2rem]">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="font-heading">
+                              {isBanned ? "Unban User" : "Ban User"}
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className="text-muted-foreground">
+                              {isBanned
+                                ? `Are you sure you want to unban ${user.name || user.email}? The user will be able to sign in again.`
+                                : `Are you sure you want to ban ${user.name || user.email}? This will prevent the user from signing in to your application. This action can be undone.`}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className="rounded-xl border-border">Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleToggleBan(user.clerkId)}
+                              className={`rounded-xl ${isBanned
+                                ? "bg-green-600 hover:bg-green-700"
+                                : "bg-red-600 hover:bg-red-700"
+                                }`}
                             >
-                              {config.icon}
-                              <span className="ml-2">{config.label}</span>
-                            </DropdownMenuItem>
-                          );
-                        })}
-                      </DropdownMenuSubContent>
-                    </DropdownMenuSub>
-                  )}
+                              {isBanned ? "Unban" : "Ban"}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
 
-                  <DropdownMenuSeparator className="bg-border" />
+                      {/* Lock/Unlock */}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <DropdownMenuItem
+                            onSelect={(e) => e.preventDefault()}
+                            className={`cursor-pointer rounded-lg ${isLocked
+                              ? "text-green-600 focus:text-green-700 focus:bg-green-50"
+                              : "text-orange-600 focus:text-orange-700 focus:bg-orange-50"
+                              }`}
+                          >
+                            {isLocked ? <Unlock className="h-4 w-4 mr-2" /> : <Lock className="h-4 w-4 mr-2" />}
+                            {isLocked ? "Unlock User" : "Lock User"}
+                          </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="bg-card border-border rounded-[2rem]">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="font-heading">
+                              {isLocked ? "Unlock User" : "Lock User"}
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className="text-muted-foreground">
+                              {isLocked
+                                ? `Are you sure you want to unlock ${user.name || user.email}? The user will be able to sign in again.`
+                                : `Are you sure you want to lock ${user.name || user.email}? This will prevent the user from signing in to your application. This action can be undone.`}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className="rounded-xl border-border">Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleToggleLock(user.clerkId)}
+                              className={`rounded-xl ${isLocked
+                                ? "bg-green-600 hover:bg-green-700"
+                                : "bg-orange-600 hover:bg-orange-700"
+                                }`}
+                            >
+                              {isLocked ? "Unlock" : "Lock"}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
 
-                  {/* Ban/Unban */}
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
+                      <DropdownMenuSeparator className="bg-border" />
+
+                      {/* Delete User */}
                       <DropdownMenuItem
-                        onSelect={(e) => e.preventDefault()}
-                        className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50 rounded-lg"
-                      >
-                        <Ban className="h-4 w-4 mr-2" />
-                        Ban User
-                      </DropdownMenuItem>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="bg-card border-border rounded-[2rem]">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle className="font-heading">Ban User</AlertDialogTitle>
-                        <AlertDialogDescription className="text-muted-foreground">
-                          Are you sure you want to ban {user.name || user.email}
-                          ? This will prevent the user from signing in to your
-                          application. This action can be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-xl border-border">Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleToggleBan(user.clerkId)}
-                          className="bg-red-600 hover:bg-red-700 rounded-xl"
-                        >
-                          Ban
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-
-                  {/* Lock/Unlock */}
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <DropdownMenuItem
-                        onSelect={(e) => e.preventDefault()}
-                        className="cursor-pointer text-orange-600 focus:text-orange-700 focus:bg-orange-50 rounded-lg"
-                      >
-                        <Lock className="h-4 w-4 mr-2" />
-                        Lock User
-                      </DropdownMenuItem>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="bg-card border-border rounded-[2rem]">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle className="font-heading">Lock User</AlertDialogTitle>
-                        <AlertDialogDescription className="capitalize text-muted-foreground">
-                          Are you sure you want to lock <strong>{user.name || user.email}</strong>? This will prevent the user
-                          from signing in to your application. This action can be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-xl border-border">Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleToggleLock(user.clerkId)}
-                          className="bg-orange-600 hover:bg-orange-700 rounded-xl"
-                        >
-                          Lock
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-
-                  <DropdownMenuSeparator className="bg-border" />
-
-                  {/* Delete */}
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <DropdownMenuItem
-                        onSelect={(e) => e.preventDefault()}
+                        onClick={() => setDeletingUser(user)}
                         className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50 rounded-lg"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete User
                       </DropdownMenuItem>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="bg-card border-border rounded-[2rem]">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle className="font-heading">Delete User</AlertDialogTitle>
-                        <AlertDialogDescription className="capitalize text-muted-foreground">
-                          Are you sure you want to delete <strong>{user.name || user.email}</strong>? This
-                          action cannot be undone and will permanently remove
-                          the user account.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-xl border-border">Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleDeleteUser(user.clerkId)}
-                          className="bg-red-600 hover:bg-red-700 rounded-xl"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                    </>
+                  )}
                 </>
               ) : (
                 <DropdownMenuItem
@@ -481,6 +510,31 @@ export default function AdminUsersPage() {
         searchKey="email"
         searchPlaceholder="Search by email..."
       />
+
+      <AlertDialog
+        open={!!deletingUser}
+        onOpenChange={(open) => !open && setDeletingUser(null)}
+      >
+        <AlertDialogContent className="bg-card border-border rounded-[2rem]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-heading">Delete User</AlertDialogTitle>
+            <AlertDialogDescription className="capitalize text-muted-foreground">
+              Are you sure you want to delete <strong>{deletingUser?.name || deletingUser?.email}</strong>? This
+              action cannot be undone and will permanently remove
+              the user account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl border-border">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              className="bg-red-600 hover:bg-red-700 rounded-xl"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

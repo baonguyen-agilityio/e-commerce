@@ -6,9 +6,9 @@ import { clerkClient } from "@clerk/express";
 import { ErrorMessages } from "../../shared/errors/messages";
 
 export class UserService implements IUserService {
-  constructor(private readonly userRepository: Repository<User>) {}
+  constructor(private readonly userRepository: Repository<User>) { }
 
-    private async findUserOrThrow(clerkId: string): Promise<User> {
+  private async findUserOrThrow(clerkId: string): Promise<User> {
     const user = await this.userRepository.findOne({ where: { clerkId } });
     if (!user) {
       throw new NotFoundError(ErrorMessages.USER_NOT_FOUND);
@@ -35,7 +35,9 @@ export class UserService implements IUserService {
   }
 
   async getAllUsers(): Promise<User[]> {
-    const users = await this.userRepository.find();
+    const users = await this.userRepository.find({
+      withDeleted: true,
+    });
     return users.sort((a, b) => {
       const roleDiff = getRoleLevel(b.role) - getRoleLevel(a.role);
       if (roleDiff !== 0) {
@@ -104,32 +106,65 @@ export class UserService implements IUserService {
 
     targetUser.role = newRole;
     await this.userRepository.save(targetUser);
-    await clerkClient.users.updateUserMetadata(targetClerkId, { 
+    await clerkClient.users.updateUserMetadata(targetClerkId, {
       publicMetadata: { role: newRole },
-     });
+    });
     return targetUser;
   }
 
   async deleteUser(clerkId: string, requestingUserRole: UserRole): Promise<boolean> {
     const user = await this.findUserOrThrow(clerkId);
     const adminCount = await this.userRepository.count({
-        where: { role: UserRole.ADMIN },
-      });
+      where: { role: UserRole.ADMIN },
+    });
     if (user.role === UserRole.SUPER_ADMIN) {
       throw new ForbiddenError(ErrorMessages.CANNOT_DELETE_SUPER_ADMIN);
     }
     if (getRoleLevel(user.role) >= getRoleLevel(requestingUserRole)) {
       throw new ForbiddenError(ErrorMessages.CANNOT_DELETE_USER_WITH_HIGHER_ROLE);
     }
-    if(user.role === UserRole.ADMIN && adminCount <= 1) {
+    if (user.role === UserRole.ADMIN && adminCount <= 1) {
       throw new BadRequestError(ErrorMessages.CANNOT_DELETE_LAST_ADMIN);
     }
-    const deleteUserClerk = await clerkClient.users.deleteUser(clerkId);
-    if (!deleteUserClerk) {
-      throw new InternalError(ErrorMessages.FAILED_TO_DELETE_USER_FROM_CLERK);
+
+    if (!user.isBanned) {
+      try {
+        await clerkClient.users.banUser(clerkId);
+      } catch (error) {
+        throw new InternalError(ErrorMessages.FAILED_TO_DELETE_USER_FROM_CLERK);
+      }
     }
-    await this.userRepository.delete({ clerkId });
+
+    await this.userRepository.softDelete({ clerkId });
     return true;
+  }
+
+  async restoreUser(clerkId: string): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: { clerkId },
+      withDeleted: true,
+    });
+
+    if (!user) {
+      throw new NotFoundError(ErrorMessages.USER_NOT_FOUND);
+    }
+
+    if (!user.deletedAt) {
+      throw new BadRequestError("User is not deleted");
+    }
+
+    await this.userRepository.restore({ clerkId });
+
+    if (!user.isBanned) {
+      try {
+        await clerkClient.users.unbanUser(clerkId);
+      } catch (error) {
+        await this.userRepository.softDelete({ clerkId });
+        throw new InternalError("Failed to restore user in Clerk");
+      }
+    }
+
+    return await this.findUserOrThrow(clerkId);
   }
 
   async toggleBan(clerkId: string, requestingUserRole: UserRole): Promise<User> {

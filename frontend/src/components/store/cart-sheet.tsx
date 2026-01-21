@@ -13,7 +13,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/utils";
 
-export function CartSheet() {
+interface CartSheetProps {
+    onClose: () => void;
+}
+
+export function CartSheet({ onClose }: CartSheetProps) {
     const { isSignedIn } = useAuth();
     const { data: cart, isLoading } = useCart();
     const updateCartItem = useUpdateCartItem();
@@ -34,13 +38,9 @@ export function CartSheet() {
         }
     };
 
-    const handleCheckout = async () => {
-        try {
-            await checkout.mutateAsync();
-            router.push("/orders");
-        } catch (error) {
-            // Error is handled in the hook
-        }
+    const handleCheckout = () => {
+        onClose();
+        router.push("/cart");
     };
 
     if (!isSignedIn) {
@@ -97,7 +97,7 @@ export function CartSheet() {
                         <p className="text-foreground font-semibold mb-1">Your cart is empty</p>
                         <p className="text-muted-foreground text-sm">Start shopping to add items to your cart</p>
                     </div>
-                    <Link href="/products">
+                    <Link href="/products" onClick={onClose}>
                         <Button className="cursor-pointer bg-primary hover:bg-primary/90 text-primary-foreground rounded-full h-11 px-6">
                             Browse Greenery
                             <ArrowRight className="ml-2 h-4 w-4" />
@@ -145,9 +145,13 @@ export function CartSheet() {
                             {/* Product Info */}
                             <div className="flex-1 min-w-0 flex flex-col justify-center">
                                 <div className="flex items-start justify-between gap-4">
-                                    <h4 className="font-heading text-lg font-bold text-card-foreground line-clamp-2 leading-tight">
+                                    <Link
+                                        href={`/products/${item.product.id}`}
+                                        onClick={onClose}
+                                        className="font-heading text-lg font-bold text-card-foreground line-clamp-2 leading-tight hover:text-primary transition-colors cursor-pointer"
+                                    >
                                         {item.product.name}
-                                    </h4>
+                                    </Link>
                                     <Button
                                         variant="ghost"
                                         size="icon"

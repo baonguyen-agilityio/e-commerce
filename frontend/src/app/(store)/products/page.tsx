@@ -36,6 +36,7 @@ export default function ProductsPage() {
   const { data: productsData, isLoading } = useProducts({
     search: debouncedSearch || undefined,
     categoryId: selectedCategory,
+    isActive: true,
     inStock,
     minPrice: debouncedPriceRange[0] > 0 ? debouncedPriceRange[0] : undefined,
     maxPrice: debouncedPriceRange[1] < 1000 ? debouncedPriceRange[1] : undefined,

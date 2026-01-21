@@ -1,5 +1,7 @@
 "use client";
 
+import { useAuth } from "@clerk/nextjs";
+
 import { Hero } from "@/components/store/hero";
 import { ProductCard } from "@/components/store/product-card";
 import { useProducts } from "@/hooks/use-products";
@@ -10,8 +12,9 @@ import { ArrowRight, Package, Shield, RefreshCw, Truck, Sparkles, TrendingUp, Ha
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 
-export default function HomePage() {
-  const { data: productsData, isLoading } = useProducts({ limit: 8 });
+export default function Home() {
+  const { isSignedIn } = useAuth();
+  const { data: products, isLoading } = useProducts({ limit: 8, isActive: true });
 
   return (
     <div className="bg-background">
@@ -55,67 +58,69 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {productsData?.data.map((product) => (
+            {products?.data.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
         )}
       </section>
 
-      {/* Promotional Banner */}
-      <section className="container mx-auto px-4 pb-20">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-emerald-800 to-primary p-8 md:p-12 lg:p-16">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <div
-              className="absolute inset-0"
-              style={{
-                backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255,255,255,0.3) 1px, transparent 0)`,
-                backgroundSize: "24px 24px",
-              }}
-            />
-          </div>
-
-          {/* Gradient Orbs */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-accent/30 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-secondary/20 rounded-full blur-3xl" />
-
-          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="text-center md:text-left">
-              <Badge className="bg-white/10 text-white border-0 mb-4 backdrop-blur-md">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                Seasonal Offer
-              </Badge>
-              <h3 className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
-                Grow Your Journey<br />With 20% Off
-              </h3>
-              <p className="text-primary-foreground/80 text-lg max-w-md">
-                Sign up today and receive an exclusive discount on your first order of seeds or plants.
-              </p>
+      {/* Promotional Banner - Only show for non-signed-in users */}
+      {!isSignedIn && (
+        <section className="container mx-auto px-4 pb-20">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-emerald-800 to-primary p-8 md:p-12 lg:p-16">
+            {/* Background Pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255,255,255,0.3) 1px, transparent 0)`,
+                  backgroundSize: "24px 24px",
+                }}
+              />
             </div>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/sign-up">
-                <Button
-                  size="lg"
-                  className="bg-accent hover:bg-accent/90 text-white font-semibold cursor-pointer shadow-lg shadow-accent/20 h-14 px-8 text-base transition-all duration-300 hover:shadow-xl hover:shadow-accent/30 rounded-xl"
-                >
-                  Claim Offer
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link href="/products">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-white/30 text-white hover:bg-white/10 bg-transparent cursor-pointer h-14 px-8 text-base rounded-xl"
-                >
-                  Browse Products
-                </Button>
-              </Link>
+
+            {/* Gradient Orbs */}
+            <div className="absolute top-0 right-0 w-96 h-96 bg-accent/30 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-secondary/20 rounded-full blur-3xl" />
+
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="text-center md:text-left">
+                <Badge className="bg-white/10 text-white border-0 mb-4 backdrop-blur-md">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  Seasonal Offer
+                </Badge>
+                <h3 className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
+                  Grow Your Journey<br />With 20% Off
+                </h3>
+                <p className="text-primary-foreground/80 text-lg max-w-md">
+                  Sign up today and receive an exclusive discount on your first order of seeds or plants.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link href="/sign-up">
+                  <Button
+                    size="lg"
+                    className="bg-accent hover:bg-accent/90 text-white font-semibold cursor-pointer shadow-lg shadow-accent/20 h-14 px-8 text-base transition-all duration-300 hover:shadow-xl hover:shadow-accent/30 rounded-xl"
+                  >
+                    Claim Offer
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+                <Link href="/products">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-white/30 text-white hover:bg-white/10 bg-transparent cursor-pointer h-14 px-8 text-base rounded-xl"
+                  >
+                    Browse Products
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Features Section - Bento Grid Style */}
       <section className="bg-secondary/20 border-t border-border">

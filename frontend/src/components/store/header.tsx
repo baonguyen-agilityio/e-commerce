@@ -37,6 +37,7 @@ export function Header() {
   const { data: user, isLoading: isUserLoading } = useCurrentUser();
   const { data: cart } = useCart();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const router = useRouter();
 
   const cartItemCount =
@@ -124,7 +125,7 @@ export function Header() {
           </Button>
 
           {/* Cart */}
-          <Sheet>
+          <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
@@ -144,7 +145,7 @@ export function Header() {
               side="right"
               className="w-full sm:max-w-lg bg-white p-0 border-l border-border"
             >
-              <CartSheet />
+              <CartSheet onClose={() => setIsCartOpen(false)} />
             </SheetContent>
           </Sheet>
 

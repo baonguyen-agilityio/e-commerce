@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   useProducts,
@@ -13,6 +13,7 @@ import { useCategories } from "@/hooks/use-categories";
 import { Product } from "@/types";
 import { DataTable } from "@/components/admin/data-table";
 import { ProductForm } from "@/components/admin/product-form";
+import { ProductFilters } from "@/components/admin/products/product-filters";
 import { StatsCard } from "@/components/admin/stats-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,7 +49,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Plus,
@@ -59,7 +59,6 @@ import {
   Eye,
   EyeOff,
   DollarSign,
-  Search,
   Sprout,
   Leaf,
   Filter,
@@ -79,15 +78,26 @@ export default function AdminProductsPage() {
   });
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [stockFilter, setStockFilter] = useState<string>("all");
 
-  const debouncedSearch = useDebounce(searchTerm, 500);
+  const handleSearch = useCallback((value: string) => {
+    setSearchTerm(value);
+    setPagination((prev) => {
+      // Only update if pageIndex is not already 0 to avoid re-renders
+      if (prev.pageIndex === 0) return prev;
+      return { ...prev, pageIndex: 0 };
+    });
+  }, []);
 
   // Products query (paginated, for the table)
   const { data: productsData, isLoading: isTableLoading } = useProducts({
     page: pagination.pageIndex + 1,
     limit: pagination.pageSize,
-    search: debouncedSearch || undefined,
+    search: searchTerm || undefined,
     categoryId: selectedCategory === "all" ? undefined : Number(selectedCategory),
+    isActive: statusFilter === "all" ? undefined : statusFilter === "active",
+    inStock: stockFilter === "all" ? undefined : stockFilter === "in_stock",
   }, { placeholderData: keepPreviousData });
 
   // Stats query
@@ -237,14 +247,20 @@ export default function AdminProductsPage() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40 bg-card border-border rounded-xl shadow-lg">
             <DropdownMenuItem
-              onClick={() => router.push(`/admin/products/${row.original.id}`)}
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/admin/products/${row.original.id}`);
+              }}
               className="cursor-pointer focus:bg-secondary focus:text-foreground rounded-lg"
             >
               <Eye className="h-4 w-4 mr-2" />
               View Details
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => setEditingProduct(row.original)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditingProduct(row.original);
+              }}
               className="cursor-pointer focus:bg-secondary focus:text-foreground rounded-lg"
             >
               <Pencil className="h-4 w-4 mr-2" />
@@ -252,7 +268,10 @@ export default function AdminProductsPage() {
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-border" />
             <DropdownMenuItem
-              onClick={() => setDeletingProduct(row.original)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeletingProduct(row.original);
+              }}
               className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50 rounded-lg"
             >
               <Trash2 className="h-4 w-4 mr-2" />
@@ -312,68 +331,6 @@ export default function AdminProductsPage() {
         )}
       </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-card p-2 rounded-[2rem] border border-border/50 shadow-sm pl-4 pr-2 py-2">
-        <div className="flex flex-1 items-center gap-3 w-full md:w-auto overflow-x-auto no-scrollbar">
-          <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search products..."
-              className="pl-10 h-11 border-border bg-secondary/20 focus:bg-background focus:border-primary focus:ring-primary/20 rounded-xl"
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPagination({ ...pagination, pageIndex: 0 });
-              }}
-            />
-          </div>
-          <Select
-            value={selectedCategory}
-            onValueChange={(val) => {
-              setSelectedCategory(val);
-              setPagination({ ...pagination, pageIndex: 0 });
-            }}
-          >
-            <SelectTrigger className="w-[180px] h-11 border-border bg-secondary/20 rounded-xl focus:ring-primary/20">
-              <div className="flex items-center gap-2">
-                <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-                <SelectValue placeholder="All Categories" />
-              </div>
-            </SelectTrigger>
-            <SelectContent className="rounded-xl border-border">
-              <SelectItem value="all">All Categories</SelectItem>
-              {categories?.map((c) => (
-                <SelectItem key={c.id} value={c.id.toString()}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer shadow-lg shadow-primary/20 rounded-xl h-11 px-6 font-bold w-full md:w-auto">
-              <Plus className="h-4 w-4" />
-              Add Product
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-lg bg-card border-border rounded-[2rem]">
-            <DialogHeader>
-              <DialogTitle className="text-foreground font-heading text-2xl">Add New Product</DialogTitle>
-              <DialogDescription className="text-muted-foreground">
-                Fill in the details to add a new item to your garden.
-              </DialogDescription>
-            </DialogHeader>
-            <ProductForm
-              categories={categories || []}
-              onSubmit={handleCreate}
-              isSubmitting={createProduct.isPending}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
-
       {/* Data Table */}
       <DataTable
         columns={columns}
@@ -382,6 +339,64 @@ export default function AdminProductsPage() {
         pagination={pagination}
         onPaginationChange={setPagination}
         onRowClick={(product) => router.push(`/admin/products/${product.id}`)}
+        searchKey="name"
+        searchPlaceholder="Search products..."
+        onSearch={handleSearch}
+        filterElement={
+          <ProductFilters
+            categories={categories || []}
+            selectedCategory={selectedCategory}
+            onCategoryChange={(val) => {
+              setSelectedCategory(val);
+              setPagination({ ...pagination, pageIndex: 0 });
+            }}
+            status={statusFilter}
+            onStatusChange={(val) => {
+              setStatusFilter(val);
+              setPagination({ ...pagination, pageIndex: 0 });
+            }}
+            stock={stockFilter}
+            onStockChange={(val) => {
+              setStockFilter(val);
+              setPagination({ ...pagination, pageIndex: 0 });
+            }}
+            onReset={() => {
+              setSelectedCategory("all");
+              setStatusFilter("all");
+              setStockFilter("all");
+              setSearchTerm("");
+              setPagination({ ...pagination, pageIndex: 0 });
+            }}
+            hasActiveFilters={
+              selectedCategory !== "all" ||
+              statusFilter !== "all" ||
+              stockFilter !== "all"
+            }
+          />
+        }
+        actionElement={
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer shadow-lg shadow-primary/20 rounded-xl h-10 px-4 font-bold">
+                <Plus className="h-4 w-4" />
+                Add Product
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-lg bg-card border-border rounded-[2rem]">
+              <DialogHeader>
+                <DialogTitle className="text-foreground font-heading text-2xl">Add New Product</DialogTitle>
+                <DialogDescription className="text-muted-foreground">
+                  Fill in the details to add a new item to your garden.
+                </DialogDescription>
+              </DialogHeader>
+              <ProductForm
+                categories={categories || []}
+                onSubmit={handleCreate}
+                isSubmitting={createProduct.isPending}
+              />
+            </DialogContent>
+          </Dialog>
+        }
       />
 
       {/* Edit Dialog */}

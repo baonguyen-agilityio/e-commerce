@@ -18,29 +18,38 @@ export function AuthSync() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    // 1. Always set token source first
     if (isSignedIn) {
       api.setTokenSource(getToken);
     } else {
       api.setTokenSource(async () => null);
+      queryClient.setQueryData(["me"], null); // Clear user data on sign out
+      return; // Stop here if not signed in
     }
-  }, [isSignedIn, getToken]);
 
-  useEffect(() => {
+    // 2. Then sync user with backend
     const syncUser = async () => {
-      if (!isSignedIn) return;
-
       try {
-        // Call /users/me to sync user with backend
+        console.log("[AuthSync] Syncing user with backend...");
+        // Ensure token is ready before calling API
+        const token = await getToken();
+        if (!token) {
+          console.warn("[AuthSync] No token available yet");
+          return;
+        }
+
         const user = await api.getMe();
         queryClient.setQueryData(["me"], user);
-        console.log("[AuthSync] User synced with backend:", user.email);
+        console.log("[AuthSync] User synced successfully:", user.email);
       } catch (error) {
-        console.error("[AuthSync] Failed to sync user with backend:", error);
+        console.error("[AuthSync] Failed to sync user:", error);
+        // If 401, it might be because the token wasn't ready or user doesn't exist yet
+        // The api client handles retries, so we just log here
       }
     };
 
     syncUser();
-  }, [isSignedIn, queryClient]);
+  }, [isSignedIn, getToken, queryClient]);
 
   return null;
 }

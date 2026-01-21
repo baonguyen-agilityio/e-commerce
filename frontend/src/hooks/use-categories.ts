@@ -41,8 +41,9 @@ export function useUpdateCategory() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<Category> }) =>
       api.updateCategory(id, data),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["category", variables.id] });
       toast.success("Category updated successfully");
     },
     onError: (error: Error) => {
@@ -56,8 +57,9 @@ export function useDeleteCategory() {
 
   return useMutation({
     mutationFn: (id: number) => api.deleteCategory(id),
-    onSuccess: () => {
+    onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["category", id] });
       toast.success("Category deleted successfully");
     },
     onError: (error: Error) => {

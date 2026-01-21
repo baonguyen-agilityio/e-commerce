@@ -7,7 +7,6 @@ import { createProductRoutes } from "../product.routes";
 import { createMockProduct } from "../../../test/factories/product.factory";
 import { errorHandler } from "../../../shared/middleware/errorHandler";
 
-// Mock the requireAuth middleware to bypass authentication for tests
 vi.mock("../../../shared/middleware/requireAuth", () => ({
     requireAuth: () => (req: any, res: any, next: any) => next(),
 }));
@@ -17,7 +16,6 @@ describe("ProductController", () => {
     let mockProductService: ProductService;
 
     beforeEach(() => {
-        // Create a mock service with spy methods
         mockProductService = {
             getAllProducts: vi.fn(),
             getProductById: vi.fn(),
@@ -26,17 +24,13 @@ describe("ProductController", () => {
             deleteProduct: vi.fn(),
         } as unknown as ProductService;
 
-        // Create a fresh express app for each test
         app = express();
-        app.use(express.json()); // Essential for POST/PUT
+        app.use(express.json());
 
-        // Inject mock service into controller
         const productController = new ProductController(mockProductService);
 
-        // Mount routes
         app.use("/products", createProductRoutes(productController));
 
-        // Register error handler to catch validation errors
         app.use(errorHandler);
     });
 
@@ -57,7 +51,6 @@ describe("ProductController", () => {
                 .query({ page: 1, limit: 10 });
 
             expect(response.status).toBe(200);
-            // Serialize expectation to match JSON response (Dates became strings)
             expect(response.body).toEqual(JSON.parse(JSON.stringify(mockResult)));
             expect(mockProductService.getAllProducts).toHaveBeenCalledWith(
                 expect.objectContaining({ page: 1, limit: 10 })
@@ -104,7 +97,6 @@ describe("ProductController", () => {
         });
 
         it("should return 400 if validation fails", async () => {
-            // Missing required fields (price, categoryId, etc)
             const invalidData = { name: "I have no price" };
 
             const response = await request(app)

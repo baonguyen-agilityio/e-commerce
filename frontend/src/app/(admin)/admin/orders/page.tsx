@@ -41,7 +41,8 @@ export default function AdminOrdersPage() {
 
   const columns: ColumnDef<Order>[] = [
     {
-      accessorKey: "id",
+      accessorFn: (row) => String(row.id),
+      id: "id",
       header: "Order",
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
@@ -199,6 +200,8 @@ export default function AdminOrdersPage() {
       <DataTable
         columns={columns}
         data={orders || []}
+        searchKey="id"
+        searchPlaceholder="Search order ID..."
         onRowClick={(order) => setViewingOrder(order)}
       />
 

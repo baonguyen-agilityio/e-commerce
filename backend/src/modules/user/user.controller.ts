@@ -4,7 +4,7 @@ import { asyncHandler } from "../../shared/middleware/asyncHandler";
 import { UserRole } from "./entities/User";
 
 export class UserController {
-  constructor(private readonly userService: IUserService) {}
+  constructor(private readonly userService: IUserService) { }
 
   getMe = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const auth = req.auth!;
@@ -65,6 +65,14 @@ export class UserController {
       const auth = req.auth!;
       await this.userService.deleteUser(clerkId, auth.role as UserRole);
       res.json({ message: "User deleted successfully" });
+    },
+  );
+
+  restoreUser = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const { clerkId } = req.params;
+      const user = await this.userService.restoreUser(clerkId);
+      res.json(user);
     },
   );
 

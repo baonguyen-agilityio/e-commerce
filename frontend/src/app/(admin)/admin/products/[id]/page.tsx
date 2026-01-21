@@ -45,14 +45,14 @@ export default function ProductDetailPage() {
         return (
             <div className="space-y-6">
                 <div className="flex items-center gap-4">
-                    <Skeleton className="h-10 w-10" />
-                    <Skeleton className="h-8 w-48" />
+                    <Skeleton className="h-10 w-10 rounded-xl bg-secondary/50" />
+                    <Skeleton className="h-8 w-48 rounded-lg bg-secondary/50" />
                 </div>
                 <div className="grid gap-6 md:grid-cols-2">
-                    <Skeleton className="h-[400px] rounded-xl" />
+                    <Skeleton className="h-[400px] rounded-[2rem] bg-secondary/50" />
                     <div className="space-y-6">
-                        <Skeleton className="h-[200px]" />
-                        <Skeleton className="h-[150px]" />
+                        <Skeleton className="h-[200px] rounded-[2rem] bg-secondary/50" />
+                        <Skeleton className="h-[150px] rounded-[2rem] bg-secondary/50" />
                     </div>
                 </div>
             </div>
@@ -62,9 +62,11 @@ export default function ProductDetailPage() {
     if (error || !product) {
         return (
             <div className="flex flex-col items-center justify-center h-[50vh] space-y-4">
-                <Package className="h-16 w-16 text-slate-300" />
-                <h2 className="text-xl font-semibold text-slate-900">Product not found</h2>
-                <Button variant="outline" onClick={() => router.back()}>
+                <div className="h-24 w-24 rounded-full bg-secondary/20 flex items-center justify-center">
+                    <Package className="h-12 w-12 text-muted-foreground/50" />
+                </div>
+                <h2 className="text-2xl font-heading font-bold text-foreground">Product not found</h2>
+                <Button variant="outline" className="rounded-xl" onClick={() => router.back()}>
                     Go Back
                 </Button>
             </div>
@@ -78,16 +80,16 @@ export default function ProductDetailPage() {
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-9 w-9"
+                        className="h-10 w-10 rounded-xl hover:bg-secondary hover:text-foreground"
                         onClick={() => router.back()}
                     >
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+                        <h1 className="text-3xl font-heading font-bold text-foreground tracking-tight">
                             Product Details
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-muted-foreground">
                             View and manage product information
                         </p>
                     </div>
@@ -95,15 +97,15 @@ export default function ProductDetailPage() {
 
                 <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                     <DialogTrigger asChild>
-                        <Button className="gap-2 bg-amber-500 hover:bg-amber-600 text-white cursor-pointer shadow-sm">
+                        <Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer shadow-lg shadow-primary/20 rounded-xl h-10 px-4 font-bold">
                             <Pencil className="h-4 w-4" />
                             Edit Product
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-lg">
+                    <DialogContent className="sm:max-w-lg bg-card border-border rounded-[2rem]">
                         <DialogHeader>
-                            <DialogTitle className="text-slate-900">Edit Product</DialogTitle>
-                            <DialogDescription className="text-slate-500">
+                            <DialogTitle className="text-foreground font-heading text-2xl">Edit Product</DialogTitle>
+                            <DialogDescription className="text-muted-foreground">
                                 Update the product details below.
                             </DialogDescription>
                         </DialogHeader>
@@ -119,8 +121,8 @@ export default function ProductDetailPage() {
 
             <div className="grid gap-6 lg:grid-cols-2">
                 {/* Left Column - Image */}
-                <Card className="overflow-hidden border-slate-200">
-                    <div className="relative aspect-square w-full bg-slate-50">
+                <Card className="overflow-hidden border-border/50 bg-card rounded-[2rem] shadow-sm">
+                    <div className="relative aspect-square w-full bg-secondary/10">
                         {product.imageUrl ? (
                             <Image
                                 src={product.imageUrl}
@@ -131,7 +133,7 @@ export default function ProductDetailPage() {
                                 priority
                             />
                         ) : (
-                            <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                            <div className="flex flex-col items-center justify-center h-full text-muted-foreground/40">
                                 <Package className="h-24 w-24 mb-4" />
                                 <p>No image available</p>
                             </div>
@@ -141,70 +143,70 @@ export default function ProductDetailPage() {
 
                 {/* Right Column - Details */}
                 <div className="space-y-6">
-                    <Card className="border-slate-200">
-                        <CardHeader>
+                    <Card className="border-border/50 bg-card rounded-[2rem] shadow-sm h-full">
+                        <CardHeader className="pb-4">
                             <div className="flex items-start justify-between">
                                 <div>
-                                    <CardTitle className="text-xl font-bold text-slate-900">
+                                    <CardTitle className="text-2xl font-heading font-bold text-foreground">
                                         {product.name}
                                     </CardTitle>
-                                    <CardDescription className="mt-2">
+                                    <CardDescription className="mt-2 text-muted-foreground font-mono">
                                         ID: {product.id}
                                     </CardDescription>
                                 </div>
                                 <Badge
                                     className={
                                         product.isActive
-                                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                            : "bg-slate-100 text-slate-600 border-slate-200"
+                                            ? "bg-primary/20 text-primary border-primary/20"
+                                            : "bg-secondary text-muted-foreground border-border/50"
                                     }
                                 >
                                     {product.isActive ? "Active" : "Draft"}
                                 </Badge>
                             </div>
                         </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="prose prose-sm text-slate-600">
+                        <CardContent className="space-y-8">
+                            <div className="prose prose-sm text-muted-foreground">
                                 <p>{product.description || "No description provided."}</p>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="p-4 rounded-lg bg-amber-50 border border-amber-100">
-                                    <div className="flex items-center gap-2 text-amber-600 mb-1">
+                                <div className="p-5 rounded-[1.5rem] bg-primary/10 border border-primary/20">
+                                    <div className="flex items-center gap-2 text-primary mb-2">
                                         <DollarSign className="h-4 w-4" />
-                                        <span className="text-sm font-medium">Price</span>
+                                        <span className="text-sm font-bold uppercase tracking-wider">Price</span>
                                     </div>
-                                    <p className="text-2xl font-bold text-slate-900">
+                                    <p className="text-3xl font-heading font-bold text-foreground">
                                         {formatCurrency(product.price)}
                                     </p>
                                 </div>
-                                <div className="p-4 rounded-lg bg-slate-50 border border-slate-100">
-                                    <div className="flex items-center gap-2 text-slate-500 mb-1">
+                                <div className="p-5 rounded-[1.5rem] bg-secondary/30 border border-border/50">
+                                    <div className="flex items-center gap-2 text-muted-foreground mb-2">
                                         <Layers className="h-4 w-4" />
-                                        <span className="text-sm font-medium">Stock</span>
+                                        <span className="text-sm font-bold uppercase tracking-wider">Stock</span>
                                     </div>
-                                    <p className="text-2xl font-bold text-slate-900">
+                                    <p className="text-3xl font-heading font-bold text-foreground">
                                         {product.stock}
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="space-y-4 pt-4 border-t border-slate-100">
+                            <div className="space-y-4 pt-6 border-t border-border/30">
                                 <div className="flex items-center justify-between text-sm">
-                                    <div className="flex items-center gap-2 text-slate-500">
+                                    <div className="flex items-center gap-2 text-muted-foreground">
                                         <Tag className="h-4 w-4" />
                                         <span>Category</span>
                                     </div>
-                                    <Badge variant="outline" className="text-slate-700">
+                                    <Badge variant="outline" className="text-foreground border-border bg-secondary/20">
                                         {product.category?.name || "Uncategorized"}
                                     </Badge>
                                 </div>
                                 <div className="flex items-center justify-between text-sm">
-                                    <div className="flex items-center gap-2 text-slate-500">
+                                    <div className="flex items-center gap-2 text-muted-foreground">
                                         <Calendar className="h-4 w-4" />
                                         <span>Created At</span>
                                     </div>
-                                    <span className="text-slate-900 font-medium">
+                                    <span className="text-foreground font-medium">
                                         {format(new Date(product.createdAt), "MMM d, yyyy")}
                                     </span>
                                 </div>

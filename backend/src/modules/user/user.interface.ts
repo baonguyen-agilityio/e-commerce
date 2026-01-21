@@ -18,6 +18,7 @@ export interface IUserService {
   getAllUsers(): Promise<User[]>;
   changeRole(changeRoleDto: ChangeRoleDto): Promise<User>;
   deleteUser(clerkId: string, requestingUserRole: UserRole): Promise<boolean>;
+  restoreUser(clerkId: string): Promise<User>;
   toggleBan(clerkId: string, requestingUserRole: UserRole): Promise<User>;
   toggleLock(clerkId: string, requestingUserRole: UserRole): Promise<User>;
 }

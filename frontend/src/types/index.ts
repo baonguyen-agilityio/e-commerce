@@ -15,6 +15,7 @@ export interface User {
   isBanned: boolean;
   isLocked: boolean;
   createdAt: string;
+  deletedAt: string | null;
 }
 
 // Category types
