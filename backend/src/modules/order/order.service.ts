@@ -10,6 +10,7 @@ import { Product } from "../product/entities/Product";
 import { IPaymentGateway } from "../../shared/interfaces/IPaymentGateway";
 import { BadRequestError, ForbiddenError, NotFoundError } from "../../shared/errors";
 import { ErrorMessages } from "../../shared/errors/messages";
+import { IEmailService } from "../../shared/interfaces/IEmailService";
 
 export class OrderService implements IOrderService {
   private stripe: Stripe;
@@ -21,6 +22,7 @@ export class OrderService implements IOrderService {
     private readonly cartItemRepository: Repository<CartItem>,
     private readonly productRepository: Repository<Product>,
     private readonly paymentGateway: IPaymentGateway,
+    private readonly emailService: IEmailService
   ) {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
   }
@@ -88,6 +90,13 @@ export class OrderService implements IOrderService {
       where: { id: order.id },
       relations: ["items", "items.product"],
     });
+
+    this.emailService.sendOrderConfirmation({
+      order: fullOrder!,
+      customer: user
+    }).catch(err => {
+      console.error('Failed to send order confirmation email:', err);
+    })
     return { order: fullOrder!, success: true };
   }
 
@@ -113,7 +122,7 @@ export class OrderService implements IOrderService {
     });
 
     if (!order) {
-      throw new NotFoundError(ErrorMessages.ORDER_NOT_FOUND);   
+      throw new NotFoundError(ErrorMessages.ORDER_NOT_FOUND);
     }
 
     if (hasPermission(role, UserRole.ADMIN)) {
@@ -125,13 +134,13 @@ export class OrderService implements IOrderService {
       throw new ForbiddenError(ErrorMessages.NOT_AUTHORIZED_TO_VIEW_ORDER);
     }
 
-    return order; 
+    return order;
   }
 
   async getOrders(): Promise<Order[]> {
     return this.orderRepository.find({
-        relations: ["items", "items.product", "user"],
-        order: { createdAt: "DESC" },
-      });
+      relations: ["items", "items.product", "user"],
+      order: { createdAt: "DESC" },
+    });
   }
 }

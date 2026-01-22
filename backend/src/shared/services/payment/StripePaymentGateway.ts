@@ -3,7 +3,7 @@ import {
   IPaymentGateway,
   PaymentDetails,
   PaymentResult,
-} from "../interfaces/IPaymentGateway";
+} from "../../interfaces/IPaymentGateway";
 
 export class StripePaymentGateway implements IPaymentGateway {
   private stripe: Stripe;

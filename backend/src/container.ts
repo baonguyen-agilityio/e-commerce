@@ -16,7 +16,9 @@ import { Order } from "./modules/order/entities/Order";
 import { OrderService } from "./modules/order/order.service";
 import { OrderController } from "./modules/order/order.controller";
 import { OrderItem } from "./modules/order/entities/OrderItem";
-import { StripePaymentGateway } from "./shared/services/StripePaymentGateway";
+import { IEmailService } from "./shared/interfaces/IEmailService";
+import { ResendEmailService } from "./shared/services/email/ResendEmailService";
+import { StripePaymentGateway } from "./shared/services/payment/StripePaymentGateway";
 
 export interface Container {
   userController: UserController;
@@ -50,7 +52,8 @@ export function createContainer(dataSource: DataSource): Container {
 
   const orderRepository = dataSource.getRepository(Order);
   const orderItemRepository = dataSource.getRepository(OrderItem);
-  const paymentGateway =  new StripePaymentGateway(process.env.STRIPE_SECRET_KEY || "");
+  const paymentGateway = new StripePaymentGateway(process.env.STRIPE_SECRET_KEY || "");
+  const emailService: IEmailService = new ResendEmailService(process.env.RESEND_API_KEY || "")
   const orderService = new OrderService(
     orderRepository,
     orderItemRepository,
@@ -58,7 +61,8 @@ export function createContainer(dataSource: DataSource): Container {
     cartRepository,
     cartItemRepository,
     productRepository,
-    paymentGateway
+    paymentGateway,
+    emailService
   );
   const orderController = new OrderController(orderService);
 

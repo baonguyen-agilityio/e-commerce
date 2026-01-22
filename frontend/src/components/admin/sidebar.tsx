@@ -16,7 +16,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { UserButton } from "@clerk/nextjs";
+import { UserButtonWrapper } from "@/components/admin/user-button-wrapper";
 import {
   LayoutDashboard,
   Sprout,
@@ -171,7 +171,7 @@ export function AdminSidebar() {
       {/* Footer with User */}
       <SidebarFooter className="border-t border-border/50 p-4 bg-secondary/10">
         <div className="flex items-center gap-4 bg-background p-3 rounded-2xl border border-border shadow-sm">
-          <UserButton
+          <UserButtonWrapper
             afterSignOutUrl="/"
             appearance={{
               elements: {
