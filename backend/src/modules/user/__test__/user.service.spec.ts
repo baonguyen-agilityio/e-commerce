@@ -53,6 +53,7 @@ describe("UserService", () => {
       const result = await userService.findOrCreate({
         clerkId: "clerk_customer",
         email: "customer@test.com",
+        role: UserRole.CUSTOMER,
       });
 
       expect(result).toEqual(mockCustomer);
@@ -67,6 +68,7 @@ describe("UserService", () => {
       await userService.findOrCreate({
         clerkId: "clerk_new",
         email: "new@test.com",
+        role: UserRole.CUSTOMER,
       });
 
       expect(mockUserRepository.create).toHaveBeenCalled();

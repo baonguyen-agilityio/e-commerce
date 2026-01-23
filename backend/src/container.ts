@@ -1,24 +1,20 @@
-import { UserService } from "./modules/user/user.service";
-import { ProductController } from "./modules/product/product.controller";
-import { UserController } from "./modules/user/user.controller";
+import { UserService, UserController } from "./modules/user";
+import { ProductController, ProductService } from "./modules/product";
+import { CategoryService, CategoryController } from "./modules/category";
+import { CartService, CartController } from "./modules/cart";
+import { OrderService, OrderController } from "./modules/order";
 import { DataSource } from "typeorm";
 import { User } from "./modules/user/entities/User";
 import { Product } from "./modules/product/entities/Product";
-import { ProductService } from "./modules/product/product.service";
 import { Category } from "./modules/category/entities/Category";
-import { CategoryService } from "./modules/category/category.service";
-import { CategoryController } from "./modules/category/category.controller";
 import { Cart } from "./modules/cart/entities/Cart";
-import { CartService } from "./modules/cart/cart.service";
-import { CartController } from "./modules/cart/cart.controller";
 import { CartItem } from "./modules/cart/entities/CartItem";
 import { Order } from "./modules/order/entities/Order";
-import { OrderService } from "./modules/order/order.service";
-import { OrderController } from "./modules/order/order.controller";
 import { OrderItem } from "./modules/order/entities/OrderItem";
 import { IEmailService } from "./shared/interfaces/IEmailService";
 import { ResendEmailService } from "./shared/services/email/ResendEmailService";
 import { StripePaymentGateway } from "./shared/services/payment/StripePaymentGateway";
+import { env } from "./config/environment";
 
 export interface Container {
   userController: UserController;
@@ -52,15 +48,12 @@ export function createContainer(dataSource: DataSource): Container {
 
   const orderRepository = dataSource.getRepository(Order);
   const orderItemRepository = dataSource.getRepository(OrderItem);
-  const paymentGateway = new StripePaymentGateway(process.env.STRIPE_SECRET_KEY || "");
-  const emailService: IEmailService = new ResendEmailService(process.env.RESEND_API_KEY || "")
+  const paymentGateway = new StripePaymentGateway(env.STRIPE_SECRET_KEY);
+  const emailService: IEmailService = new ResendEmailService(env.RESEND_API_KEY);
   const orderService = new OrderService(
     orderRepository,
-    orderItemRepository,
     userRepository,
     cartRepository,
-    cartItemRepository,
-    productRepository,
     paymentGateway,
     emailService
   );

@@ -3,7 +3,6 @@ import { Order } from "./entities/Order";
 import { CheckoutResult, IOrderService } from "./order.interface";
 import { hasPermission, User, UserRole } from "../user/entities/User";
 import { Cart } from "../cart/entities/Cart";
-import Stripe from "stripe";
 import { CartItem } from "../cart/entities/CartItem";
 import { OrderItem } from "./entities/OrderItem";
 import { Product } from "../product/entities/Product";
@@ -13,19 +12,13 @@ import { ErrorMessages } from "../../shared/errors/messages";
 import { IEmailService } from "../../shared/interfaces/IEmailService";
 
 export class OrderService implements IOrderService {
-  private stripe: Stripe;
   constructor(
     private readonly orderRepository: Repository<Order>,
-    private readonly orderItemRepository: Repository<OrderItem>,
     private readonly userRepository: Repository<User>,
     private readonly cartRepository: Repository<Cart>,
-    private readonly cartItemRepository: Repository<CartItem>,
-    private readonly productRepository: Repository<Product>,
     private readonly paymentGateway: IPaymentGateway,
     private readonly emailService: IEmailService
-  ) {
-    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
-  }
+  ) { }
 
   private async findUserOrThrow(clerkId: string): Promise<User> {
     const user = await this.userRepository.findOneBy({ clerkId });
@@ -46,6 +39,14 @@ export class OrderService implements IOrderService {
       throw new BadRequestError(ErrorMessages.CART_EMPTY);
     }
 
+    for (const item of cart.items) {
+      if (item.product.stock < item.quantity) {
+        throw new BadRequestError(
+          `Insufficient stock for ${item.product.name}. Available: ${item.product.stock}, Requested: ${item.quantity}`
+        );
+      }
+    }
+
     let total = 0;
     for (const item of cart.items) {
       total += Number(item.product.price) * item.quantity;
@@ -62,42 +63,65 @@ export class OrderService implements IOrderService {
       throw new BadRequestError(paymentIntent.error || ErrorMessages.PAYMENT_FAILED);
     }
 
-    const order = this.orderRepository.create({
-      userId: user.id,
-      total,
-      status: "PAID",
-      paymentId: paymentIntent.paymentId,
-    });
-    await this.orderRepository.save(order);
-
-    for (const cartItem of cart.items) {
-      const orderItem = this.orderItemRepository.create({
-        orderId: order.id,
-        productId: cartItem.product.id,
-        quantity: cartItem.quantity,
-        priceAtPurchase: cartItem.product.price,
+    const fullOrder = await this.orderRepository.manager.transaction(async (manager) => {
+      const order = manager.create(Order, {
+        userId: user.id,
+        total,
+        status: "PAID",
+        paymentId: paymentIntent.paymentId,
       });
-      await this.orderItemRepository.save(orderItem);
+      await manager.save(order);
 
-      await this.productRepository.update(cartItem.productId, {
-        stock: () => `stock - ${cartItem.quantity}`,
+      const orderItems: OrderItem[] = [];
+      for (const cartItem of cart.items) {
+        const orderItem = manager.create(OrderItem, {
+          orderId: order.id,
+          productId: cartItem.product.id,
+          quantity: cartItem.quantity,
+          priceAtPurchase: cartItem.product.price,
+        });
+        orderItems.push(orderItem);
+      }
+      await manager.save(orderItems);
+
+      for (const cartItem of cart.items) {
+        const result = await manager
+          .createQueryBuilder()
+          .update(Product)
+          .set({ stock: () => `stock - ${cartItem.quantity}` })
+          .where("id = :id AND stock >= :quantity", {
+            id: cartItem.productId,
+            quantity: cartItem.quantity,
+          })
+          .execute();
+
+        if (result.affected === 0) {
+          throw new BadRequestError(
+            `Insufficient stock for product ${cartItem.product.name}. Please try again.`
+          );
+        }
+      }
+
+      await manager.delete(CartItem, { cartId: cart.id });
+
+      const completeOrder = await manager.findOne(Order, {
+        where: { id: order.id },
+        relations: ["items", "items.product"],
       });
-    }
 
-    await this.cartItemRepository.delete({ cartId: cart.id });
-
-    const fullOrder = await this.orderRepository.findOne({
-      where: { id: order.id },
-      relations: ["items", "items.product"],
+      return completeOrder!;
     });
 
-    this.emailService.sendOrderConfirmation({
-      order: fullOrder!,
-      customer: user
-    }).catch(err => {
-      console.error('Failed to send order confirmation email:', err);
-    })
-    return { order: fullOrder!, success: true };
+    this.emailService
+      .sendOrderConfirmation({
+        order: fullOrder,
+        customer: user,
+      })
+      .catch((err) => {
+        console.error("Failed to send order confirmation email:", err);
+      });
+
+    return { order: fullOrder, success: true };
   }
 
   async getOrdersByUser(clerkId: string): Promise<Order[]> {

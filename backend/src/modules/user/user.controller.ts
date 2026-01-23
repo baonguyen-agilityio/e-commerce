@@ -1,25 +1,19 @@
 import { Request, Response } from "express";
 import { IUserService } from "./user.interface";
 import { asyncHandler } from "../../shared/middleware/asyncHandler";
-import { UserRole } from "./entities/User";
+import { getAuthContext } from "../../shared/dtos/AuthContext";
 
 export class UserController {
   constructor(private readonly userService: IUserService) { }
 
   getMe = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const auth = req.auth!;
-
-    if (!auth.userId) {
-      return;
-    }
-
-    const email = (auth.sessionClaims.email as string) || "";
-    const name = (auth.sessionClaims.name as string) || "";
+    const authContext = getAuthContext(req);
 
     const user = await this.userService.findOrCreate({
-      clerkId: auth.userId,
-      email,
-      name,
+      clerkId: authContext.userId,
+      email: authContext.email || "",
+      name: authContext.name || "",
+      role: authContext.role,
     });
 
     res.json(user);
@@ -36,23 +30,13 @@ export class UserController {
     async (req: Request, res: Response): Promise<void> => {
       const { clerkId } = req.params;
       const { role: newRole } = req.body;
-      const auth = req.auth!;
-
-      if (!clerkId) {
-        res.status(400).json({ error: "clerkId parameter is required" });
-        return;
-      }
-
-      if (!newRole || !Object.values(UserRole).includes(newRole)) {
-        res.status(400).json({ error: "Valid role is required" });
-        return;
-      }
+      const authContext = getAuthContext(req);
 
       const user = await this.userService.changeRole({
         newRole,
         targetClerkId: clerkId,
-        requestingUserClerkId: auth.userId!,
-        requestingUserRole: auth.role as UserRole,
+        requestingUserClerkId: authContext.userId,
+        requestingUserRole: authContext.role,
       });
 
       res.json(user);
@@ -62,8 +46,8 @@ export class UserController {
   deleteUser = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const { clerkId } = req.params;
-      const auth = req.auth!;
-      await this.userService.deleteUser(clerkId, auth.role as UserRole);
+      const authContext = getAuthContext(req);
+      await this.userService.deleteUser(clerkId, authContext.role);
       res.json({ message: "User deleted successfully" });
     },
   );
@@ -79,8 +63,8 @@ export class UserController {
   toggleBan = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const { clerkId } = req.params;
-      const auth = req.auth!;
-      const user = await this.userService.toggleBan(clerkId, auth.role as UserRole);
+      const authContext = getAuthContext(req);
+      const user = await this.userService.toggleBan(clerkId, authContext.role);
       res.json(user);
     },
   );
@@ -88,8 +72,8 @@ export class UserController {
   toggleLock = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const { clerkId } = req.params;
-      const auth = req.auth!;
-      const user = await this.userService.toggleLock(clerkId, auth.role as UserRole);
+      const authContext = getAuthContext(req);
+      const user = await this.userService.toggleLock(clerkId, authContext.role);
       res.json(user);
     },
   );

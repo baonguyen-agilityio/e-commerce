@@ -26,9 +26,17 @@ export class UserService implements IUserService {
         clerkId: data.clerkId,
         email: data.email,
         name: data.name || "",
-        role: UserRole.CUSTOMER,
+        role: data.role,
       });
       await this.userRepository.save(user);
+
+      try {
+        await clerkClient.users.updateUserMetadata(data.clerkId, {
+          publicMetadata: { role: data.role },
+        });
+      } catch (error) {
+        console.error('Failed to sync role to Clerk metadata:', error);
+      }
     }
 
     return user;
@@ -135,7 +143,17 @@ export class UserService implements IUserService {
       }
     }
 
-    await this.userRepository.softDelete({ clerkId });
+    try {
+      await this.userRepository.softDelete({ clerkId });
+    } catch (error) {
+      if (!user.isBanned) {
+        await clerkClient.users.unbanUser(clerkId).catch(() => {
+          console.error('Failed to rollback Clerk ban after DB error');
+        });
+      }
+      throw error;
+    }
+
     return true;
   }
 

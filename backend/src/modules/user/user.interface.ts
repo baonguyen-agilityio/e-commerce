@@ -4,6 +4,7 @@ export interface CreateUserDto {
   clerkId: string;
   email: string;
   name?: string;
+  role: UserRole;
 }
 
 export interface ChangeRoleDto {

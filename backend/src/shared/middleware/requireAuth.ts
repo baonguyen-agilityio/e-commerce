@@ -1,11 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import {
   hasPermission,
-  User,
   UserRole,
 } from "../../modules/user/entities/User";
 import { getAuth } from "@clerk/express";
-import { AppDataSource } from "../../config/database";
 import { UnauthorizedError, ForbiddenError } from "../errors";
 
 export const requireAuth = (minRole?: UserRole) => {
@@ -17,14 +15,19 @@ export const requireAuth = (minRole?: UserRole) => {
         throw new UnauthorizedError("Authentication required");
       }
 
-      const user = await AppDataSource.getRepository(User).findOne({
-        where: { clerkId: auth.userId },
-      });
+      const metadata = auth.sessionClaims?.publicMetadata as { role?: UserRole } | undefined;
+      const role = metadata?.role || UserRole.CUSTOMER;
 
-      req.auth = { ...auth, clerkId: auth.userId, role: user?.role };
+      req.auth = {
+        ...auth,
+        userId: auth.userId,
+        clerkId: auth.userId,
+        role,
+        sessionClaims: auth.sessionClaims
+      };
 
       if (minRole) {
-        if (!user || !hasPermission(user.role, minRole)) {
+        if (!hasPermission(role, minRole)) {
           throw new ForbiddenError(`${minRole} or higher access required`);
         }
       }

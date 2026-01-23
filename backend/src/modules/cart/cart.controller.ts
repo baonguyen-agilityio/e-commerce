@@ -1,21 +1,22 @@
 import { Response, Request } from "express";
 import { asyncHandler } from "../../shared/middleware/asyncHandler";
 import { ICartService } from "./cart.interface";
+import { getAuthContext } from "../../shared/dtos/AuthContext";
 
 export class CartController {
   constructor(private readonly cartService: ICartService) { }
 
   getCart = asyncHandler(async (req: Request, res: Response) => {
-    const auth = req.auth!;
-    const cart = await this.cartService.getCartByClerkId(auth.userId!);
+    const authContext = getAuthContext(req);
+    const cart = await this.cartService.getCartByClerkId(authContext.userId);
     res.status(200).json(cart);
   });
 
   addItemToCart = asyncHandler(async (req: Request, res: Response) => {
-    const auth = req.auth!;
+    const authContext = getAuthContext(req);
     const { productId, quantity } = req.body;
     const cartItem = await this.cartService.addItemToCart(
-      auth.userId!,
+      authContext.userId,
       productId,
       quantity,
     );
@@ -23,11 +24,11 @@ export class CartController {
   });
 
   updateItemQuantity = asyncHandler(async (req: Request, res: Response) => {
-    const auth = req.auth!;
+    const authContext = getAuthContext(req);
     const cartItemId = parseInt(req.params.id, 10);
     const { quantity } = req.body;
     const cartItem = await this.cartService.updateItemQuantity(
-      auth.userId!,
+      authContext.userId,
       cartItemId,
       quantity,
     );
@@ -35,15 +36,15 @@ export class CartController {
   });
 
   removeItemFromCart = asyncHandler(async (req: Request, res: Response) => {
-    const auth = req.auth!;
+    const authContext = getAuthContext(req);
     const cartItemId = parseInt(req.params.id, 10);
-    const cart = await this.cartService.removeItemFromCart(auth.userId!, cartItemId);
+    const cart = await this.cartService.removeItemFromCart(authContext.userId, cartItemId);
     res.status(200).json(cart);
   });
 
   clearCart = asyncHandler(async (req: Request, res: Response) => {
-    const auth = req.auth!;
-    const cart = await this.cartService.clearCart(auth.userId!);
+    const authContext = getAuthContext(req);
+    const cart = await this.cartService.clearCart(authContext.userId);
     res.status(200).json(cart);
   });
 }

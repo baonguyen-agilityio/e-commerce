@@ -2,6 +2,8 @@ import { Router } from "express";
 import { UserController } from "./user.controller";
 import { requireAuth } from "../../shared/middleware/requireAuth";
 import { UserRole } from "./entities/User";
+import { validate } from "../../shared/middleware/validate";
+import { changeRoleSchema } from "./user.validation";
 
 export function createUserRoutes(controller: UserController): Router {
   const router = Router();
@@ -11,6 +13,7 @@ export function createUserRoutes(controller: UserController): Router {
   router.post(
     "/change-role/:clerkId",
     requireAuth(UserRole.ADMIN),
+    validate(changeRoleSchema),
     controller.changeRole,
   );
   router.delete(
