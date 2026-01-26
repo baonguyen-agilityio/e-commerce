@@ -4,7 +4,7 @@ import { asyncHandler } from "../../shared/middleware/asyncHandler";
 import { getAuthContext } from "../../shared/dtos/AuthContext";
 
 export class UserController {
-  constructor(private readonly userService: IUserService) { }
+  constructor(private readonly userService: IUserService) {}
 
   getMe = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const authContext = getAuthContext(req);
@@ -21,8 +21,16 @@ export class UserController {
 
   getAllUsers = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
-      const users = await this.userService.getAllUsers();
-      res.json(users);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const search = req.query.search as string;
+
+      const result = await this.userService.getAllUsers({
+        page,
+        limit,
+        search,
+      });
+      res.json(result);
     },
   );
 

@@ -6,6 +6,8 @@ import type {
   User,
   PaginatedResult,
   ProductQueryParams,
+  OrderQueryParams,
+  UserQueryParams,
 } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
@@ -20,7 +22,7 @@ class ApiClient {
   private async fetch<T>(
     endpoint: string,
     options: RequestInit = {},
-    isRetry = false
+    isRetry = false,
   ): Promise<T> {
     const headers: HeadersInit = {
       "Content-Type": "application/json",
@@ -30,7 +32,8 @@ class ApiClient {
     if (this.getTokenFn) {
       const token = await this.getTokenFn();
       if (token) {
-        (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
+        (headers as Record<string, string>)["Authorization"] =
+          `Bearer ${token}`;
       }
     }
 
@@ -53,22 +56,31 @@ class ApiClient {
   }
 
   // Products
-  async getProducts(params?: ProductQueryParams): Promise<PaginatedResult<Product>> {
+  async getProducts(
+    params?: ProductQueryParams,
+  ): Promise<PaginatedResult<Product>> {
     const searchParams = new URLSearchParams();
     if (params?.search) searchParams.set("search", params.search);
     if (params?.category) searchParams.set("category", params.category);
-    if (params?.categoryId) searchParams.set("categoryId", params.categoryId.toString());
-    if (params?.isActive !== undefined) searchParams.set("isActive", params.isActive.toString());
-    if (params?.inStock !== undefined) searchParams.set("inStock", params.inStock.toString());
-    if (params?.minPrice) searchParams.set("minPrice", params.minPrice.toString());
-    if (params?.maxPrice) searchParams.set("maxPrice", params.maxPrice.toString());
+    if (params?.categoryId)
+      searchParams.set("categoryId", params.categoryId.toString());
+    if (params?.isActive !== undefined)
+      searchParams.set("isActive", params.isActive.toString());
+    if (params?.inStock !== undefined)
+      searchParams.set("inStock", params.inStock.toString());
+    if (params?.minPrice)
+      searchParams.set("minPrice", params.minPrice.toString());
+    if (params?.maxPrice)
+      searchParams.set("maxPrice", params.maxPrice.toString());
     if (params?.sort) searchParams.set("sort", params.sort);
     if (params?.order) searchParams.set("order", params.order);
     if (params?.page) searchParams.set("page", params.page.toString());
     if (params?.limit) searchParams.set("limit", params.limit.toString());
 
     const query = searchParams.toString();
-    return this.fetch<PaginatedResult<Product>>(`/products${query ? `?${query}` : ""}`);
+    return this.fetch<PaginatedResult<Product>>(
+      `/products${query ? `?${query}` : ""}`,
+    );
   }
 
   async getProduct(id: number): Promise<Product> {
@@ -95,7 +107,9 @@ class ApiClient {
 
   // Categories
   async getCategories(): Promise<Category[]> {
-    const result = await this.fetch<PaginatedResult<Category> | Category[]>("/categories");
+    const result = await this.fetch<PaginatedResult<Category> | Category[]>(
+      "/categories",
+    );
     if (Array.isArray(result)) {
       return result;
     }
@@ -152,14 +166,25 @@ class ApiClient {
   }
 
   // Orders
-  async checkout(): Promise<{ order: Order; success: boolean }> {
+  async checkout(
+    paymentMethodId?: string,
+  ): Promise<{ order: Order; success: boolean }> {
     return this.fetch<{ order: Order; success: boolean }>("/orders", {
       method: "POST",
+      body: JSON.stringify({ paymentMethodId }),
     });
   }
 
-  async getOrders(): Promise<Order[]> {
-    return this.fetch<Order[]>("/orders");
+  async getOrders(params?: OrderQueryParams): Promise<PaginatedResult<Order>> {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set("search", params.search);
+    if (params?.page) searchParams.set("page", params.page.toString());
+    if (params?.limit) searchParams.set("limit", params.limit.toString());
+
+    const query = searchParams.toString();
+    return this.fetch<PaginatedResult<Order>>(
+      `/orders${query ? `?${query}` : ""}`,
+    );
   }
 
   async getOrdersByUser(): Promise<Order[]> {
@@ -175,8 +200,16 @@ class ApiClient {
     return this.fetch<User>("/users/me");
   }
 
-  async getAllUsers(): Promise<User[]> {
-    return this.fetch<User[]>("/users");
+  async getAllUsers(params?: UserQueryParams): Promise<PaginatedResult<User>> {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set("search", params.search);
+    if (params?.page) searchParams.set("page", params.page.toString());
+    if (params?.limit) searchParams.set("limit", params.limit.toString());
+
+    const query = searchParams.toString();
+    return this.fetch<PaginatedResult<User>>(
+      `/users${query ? `?${query}` : ""}`,
+    );
   }
 
   async changeRole(clerkId: string, role: string): Promise<User> {
@@ -204,4 +237,3 @@ class ApiClient {
 }
 
 export const api = new ApiClient();
-

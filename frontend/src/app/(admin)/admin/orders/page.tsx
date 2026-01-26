@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { useOrders } from "@/hooks/use-orders";
 import { Order } from "@/types";
 import { DataTable } from "@/components/admin/data-table";
+import { StatsCard } from "@/components/admin/stats-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,27 +18,54 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Eye, Package, ShoppingCart, User, Calendar, CreditCard, Sprout, Leaf } from "lucide-react";
-import { useState } from "react";
+import {
+  Eye,
+  Package,
+  ShoppingCart,
+  User,
+  Calendar,
+  CreditCard,
+  Sprout,
+  Leaf,
+} from "lucide-react";
+import { useCallback, useState } from "react";
 import Image from "next/image";
 import { formatCurrency } from "@/lib/utils";
+import { keepPreviousData } from "@tanstack/react-query";
+import { ORDER_STATUS_CONFIG } from "@/lib/constants";
 
 export default function AdminOrdersPage() {
-  const { data: orders, isLoading } = useOrders();
   const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const getStatusStyle = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "paid":
-        return "bg-green-100/50 text-green-700 border-green-200 font-bold";
-      case "pending":
-        return "bg-amber-100/50 text-amber-700 border-amber-200 font-bold";
-      case "cancelled":
-        return "bg-red-100/50 text-red-700 border-red-200 font-bold";
-      default:
-        return "bg-secondary text-muted-foreground border-border font-bold";
-    }
-  };
+  const handleSearch = useCallback((value: string) => {
+    setSearchTerm(value);
+    setPagination((prev) => {
+      if (prev.pageIndex === 0) return prev;
+      return { ...prev, pageIndex: 0 };
+    });
+  }, []);
+  const { data: ordersData, isLoading } = useOrders(
+    {
+      page: pagination.pageIndex + 1,
+      limit: pagination.pageSize,
+      search: searchTerm || undefined,
+    },
+    {
+      placeholderData: keepPreviousData,
+    },
+  );
+
+  const { data: allOrdersData, isLoading: isStatLoading } = useOrders({
+    limit: 9999,
+  });
+
+  const orders: Order[] = ordersData?.data || [];
+  const pageCount: number = ordersData?.totalPages || 0;
 
   const columns: ColumnDef<Order>[] = [
     {
@@ -67,7 +95,9 @@ export default function AdminOrdersPage() {
             <p className="font-bold text-foreground">
               {row.original.user?.name || "Guest"}
             </p>
-            <p className="text-xs text-muted-foreground">{row.original.user?.email}</p>
+            <p className="text-xs text-muted-foreground">
+              {row.original.user?.email}
+            </p>
           </div>
         </div>
       ),
@@ -76,7 +106,10 @@ export default function AdminOrdersPage() {
       accessorKey: "items",
       header: "Items",
       cell: ({ row }) => (
-        <Badge variant="secondary" className="bg-secondary/50 text-foreground border-border">
+        <Badge
+          variant="secondary"
+          className="bg-secondary/50 text-foreground border-border"
+        >
           {row.original.items?.length || 0} items
         </Badge>
       ),
@@ -93,11 +126,14 @@ export default function AdminOrdersPage() {
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => (
-        <Badge className={getStatusStyle(row.original.status)}>
-          {row.original.status}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        const config = ORDER_STATUS_CONFIG[row.original.status] || {
+          label: row.original.status,
+          className:
+            "bg-secondary text-muted-foreground border-border font-bold",
+        };
+        return <Badge className={config.className}>{config.label}</Badge>;
+      },
     },
     {
       accessorKey: "createdAt",
@@ -147,62 +183,58 @@ export default function AdminOrdersPage() {
   }
 
   // Stats
-  const totalOrders = orders?.length || 0;
-  const paidOrders = orders?.filter((o) => o.status === "PAID").length || 0;
-  const totalRevenue = orders?.reduce((acc, o) => acc + Number(o.total), 0) || 0;
+  const totalOrders = allOrdersData?.data?.length || 0;
+  const paidOrders =
+    allOrdersData?.data?.filter((o) => o.status === "PAID").length || 0;
+  const totalRevenue =
+    allOrdersData?.data?.reduce((acc, o) => acc + Number(o.total), 0) || 0;
 
   return (
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="bg-card border-border/50 shadow-sm rounded-[2rem] hover:shadow-md transition-shadow">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100/50">
-              <ShoppingCart className="h-7 w-7 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-3xl font-black font-heading text-foreground tracking-tight">
-                {totalOrders}
-              </p>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Total Orders</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border/50 shadow-sm rounded-[2rem] hover:shadow-md transition-shadow">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-green-100/50">
-              <CreditCard className="h-7 w-7 text-green-600" />
-            </div>
-            <div>
-              <p className="text-3xl font-black font-heading text-foreground tracking-tight">
-                {paidOrders}
-              </p>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Completed</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border/50 shadow-sm rounded-[2rem] hover:shadow-md transition-shadow">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100/50">
-              <Package className="h-7 w-7 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-3xl font-black font-heading text-amber-600 tracking-tight">
-                {formatCurrency(totalRevenue)}
-              </p>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Revenue</p>
-            </div>
-          </CardContent>
-        </Card>
+        {isStatLoading ? (
+          [...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="h-28 bg-secondary/50 rounded-[2rem]" />
+          ))
+        ) : (
+          <>
+            <StatsCard
+              title="Total Orders"
+              value={totalOrders}
+              icon={ShoppingCart}
+              description="Total orders placed"
+              iconClassName="bg-blue-100/50 text-blue-600"
+            />
+            <StatsCard
+              title="Completed"
+              value={paidOrders}
+              icon={CreditCard}
+              description="Paid and confirmed"
+              iconClassName="bg-green-100/50 text-green-600"
+            />
+            <StatsCard
+              title="Revenue"
+              value={formatCurrency(totalRevenue)}
+              icon={Package}
+              description="Total harvest value"
+              iconClassName="bg-amber-100/50 text-amber-600"
+            />
+          </>
+        )}
       </div>
 
       {/* Data Table */}
       <DataTable
         columns={columns}
-        data={orders || []}
+        data={orders}
         searchKey="id"
         searchPlaceholder="Search order ID..."
         onRowClick={(order) => setViewingOrder(order)}
+        pagination={pagination}
+        onPaginationChange={setPagination}
+        pageCount={pageCount}
+        onSearch={handleSearch}
       />
 
       {/* Order Details Dialog */}
@@ -247,8 +279,14 @@ export default function AdminOrdersPage() {
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                       Status
                     </p>
-                    <Badge className={getStatusStyle(viewingOrder.status)}>
-                      {viewingOrder.status}
+                    <Badge
+                      className={
+                        ORDER_STATUS_CONFIG[viewingOrder.status]?.className ||
+                        "bg-secondary"
+                      }
+                    >
+                      {ORDER_STATUS_CONFIG[viewingOrder.status]?.label ||
+                        viewingOrder.status}
                     </Badge>
                     <p className="text-xs text-muted-foreground font-mono mt-1">
                       {viewingOrder.paymentId || "No payment ID"}
@@ -292,11 +330,14 @@ export default function AdminOrdersPage() {
                             {item.product?.name || "Product"}
                           </p>
                           <p className="text-sm font-medium text-muted-foreground">
-                            {item.quantity} × {formatCurrency(item.priceAtPurchase)}
+                            {item.quantity} ×{" "}
+                            {formatCurrency(item.priceAtPurchase)}
                           </p>
                         </div>
                         <p className="font-mono font-black text-primary">
-                          {formatCurrency(Number(item.priceAtPurchase) * item.quantity)}
+                          {formatCurrency(
+                            Number(item.priceAtPurchase) * item.quantity,
+                          )}
                         </p>
                       </div>
                     ))}
@@ -308,7 +349,9 @@ export default function AdminOrdersPage() {
 
               {/* Total */}
               <div className="flex justify-between items-center bg-primary/5 p-4 rounded-2xl border border-primary/10">
-                <span className="font-bold text-foreground text-lg">Total Harvest Value</span>
+                <span className="font-bold text-foreground text-lg">
+                  Total Harvest Value
+                </span>
                 <span className="text-2xl font-mono font-black text-primary">
                   {formatCurrency(viewingOrder.total)}
                 </span>

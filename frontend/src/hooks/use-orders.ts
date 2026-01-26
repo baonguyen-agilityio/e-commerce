@@ -1,17 +1,20 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { useCurrentUser } from "./use-user";
+import { OrderQueryParams, PaginatedResult, Order } from "@/types";
 
-export function useOrders() {
+export function useOrders(params?: OrderQueryParams, options?: object) {
   const { data: user, isLoading: isUserLoading } = useCurrentUser();
 
-  const query = useQuery({
-    queryKey: ["orders"],
-    queryFn: () => api.getOrders(),
+  const query = useQuery<PaginatedResult<Order>>({
+    queryKey: ["orders", params],
+    queryFn: () => api.getOrders(params),
     enabled: !!user,
+    ...options,
   });
 
   return {
@@ -45,9 +48,10 @@ export function useOrder(id: number) {
 
 export function useCheckout() {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   return useMutation({
-    mutationFn: () => api.checkout(),
+    mutationFn: (paymentMethodId?: string) => api.checkout(paymentMethodId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
@@ -55,6 +59,7 @@ export function useCheckout() {
       toast.success("Order placed successfully!");
     },
     onError: (error: Error) => {
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
       toast.error(error.message || "Checkout failed");
     },
   });

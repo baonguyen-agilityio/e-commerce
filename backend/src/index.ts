@@ -19,21 +19,23 @@ const app = express();
 const PORT = env.PORT;
 
 app.use(helmet());
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (env.ALLOWED_ORIGINS.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
-app.use(express.json({ limit: '10kb' }));
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (env.ALLOWED_ORIGINS.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
+app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 app.use(clerkMiddleware());
 
 AppDataSource.initialize()
@@ -50,11 +52,7 @@ AppDataSource.initialize()
       createCategoryRoutes(container.categoryController),
     );
     app.use("/api/cart", createCartRoutes(container.cartController));
-    app.use(
-      "/api/orders",
-      checkoutLimiter,
-      createOrderRoutes(container.orderController),
-    );
+    app.use("/api/orders", createOrderRoutes(container.orderController));
 
     app.use(errorHandler);
 

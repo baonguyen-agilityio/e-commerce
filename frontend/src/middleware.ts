@@ -25,7 +25,10 @@ const ROLE_LEVELS: Record<UserRole, number> = {
   [UserRole.SUPER_ADMIN]: 3,
 };
 
-function hasMinRole(userRole: UserRole | undefined, minRole: UserRole): boolean {
+function hasMinRole(
+  userRole: UserRole | undefined,
+  minRole: UserRole,
+): boolean {
   const userLevel = ROLE_LEVELS[userRole || "customer"] ?? 0;
   const requiredLevel = ROLE_LEVELS[minRole] ?? 0;
   return userLevel >= requiredLevel;
@@ -47,8 +50,7 @@ export default clerkMiddleware(async (auth, request) => {
   }
 
   const userRole =
-    (sessionClaims?.role as { role?: UserRole } | undefined)?.role ??
-    (sessionClaims?.metadata as { role?: UserRole } | undefined)?.role ??
+    (sessionClaims?.publicMetadata as { role?: UserRole } | undefined)?.role ??
     UserRole.CUSTOMER;
   // Admin routes require STAFF role or higher
   if (isAdminRoute(request)) {
@@ -74,4 +76,3 @@ export const config = {
     "/(api|trpc)(.*)",
   ],
 };
-

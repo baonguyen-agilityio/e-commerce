@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 import { ColumnDef } from "@tanstack/react-table";
 import {
@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import { keepPreviousData } from "@tanstack/react-query";
 import {
   MoreHorizontal,
   ShieldCheck,
@@ -43,7 +44,6 @@ import {
   Unlock,
   Lock,
   Shield,
-  Star,
   UserCog,
   Leaf,
   Sprout,
@@ -96,7 +96,33 @@ const ROLE_LEVELS: Record<UserRole, number> = {
 };
 
 export default function AdminUsersPage() {
-  const { data: users = [], isLoading } = useUsers();
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const handleSearch = useCallback((value: string) => {
+    setSearchTerm(value);
+    setPagination((prev) => {
+      if (prev.pageIndex === 0) return prev;
+      return { ...prev, pageIndex: 0 };
+    });
+  }, []);
+
+  const { data: usersData, isLoading } = useUsers({
+    page: pagination.pageIndex + 1,
+    limit: pagination.pageSize,
+    search: searchTerm || undefined,
+  }, {
+    placeholderData: keepPreviousData,
+  });
+
+  const { data: allUsersData, isLoading: isStatLoading } = useUsers({ limit: 9999 });
+
+  const users: User[] = usersData?.data || [];
+  const pageCount: number = usersData?.totalPages || 0;
+
   const { data: currentUser } = useCurrentUser();
   const { mutate: changeRole } = useChangeRole();
   const { mutate: deleteUser } = useDeleteUser();
@@ -126,12 +152,13 @@ export default function AdminUsersPage() {
   };
 
   // Stats
-  const superAdminCount = users.filter(
+  const rawUsers = allUsersData?.data || [];
+  const superAdminCount = rawUsers.filter(
     (u: User) => u.role === UserRole.SUPER_ADMIN,
   ).length;
-  const adminCount = users.filter((u: User) => u.role === UserRole.ADMIN).length;
-  const staffCount = users.filter((u: User) => u.role === UserRole.STAFF).length;
-  const customerCount = users.filter(
+  const adminCount = rawUsers.filter((u: User) => u.role === UserRole.ADMIN).length;
+  const staffCount = rawUsers.filter((u: User) => u.role === UserRole.STAFF).length;
+  const customerCount = rawUsers.filter(
     (u: User) => u.role === UserRole.CUSTOMER,
   ).length;
 
@@ -308,13 +335,37 @@ export default function AdminUsersPage() {
                 <>
                   {/* If user is deleted, ONLY show Restore */}
                   {user.deletedAt ? (
-                    <DropdownMenuItem
-                      onClick={() => restoreUser(user.clerkId)}
-                      className="cursor-pointer text-green-600 focus:text-green-700 focus:bg-green-50 rounded-lg"
-                    >
-                      <RotateCcw className="h-4 w-4 mr-2" />
-                      Restore User
-                    </DropdownMenuItem>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <DropdownMenuItem
+                          onSelect={(e) => e.preventDefault()}
+                          className="cursor-pointer text-green-600 focus:text-green-700 focus:bg-green-50 rounded-lg"
+                        >
+                          <RotateCcw className="h-4 w-4 mr-2" />
+                          Restore User
+                        </DropdownMenuItem>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="bg-card border-border rounded-[2rem]">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="font-heading">
+                            Restore User
+                          </AlertDialogTitle>
+                          <AlertDialogDescription className="text-muted-foreground">
+                            Are you sure you want to restore <strong>{user.name || user.email}</strong>?
+                            The account will be moved from archive to active status.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="rounded-xl border-border">Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => restoreUser(user.clerkId)}
+                            className="rounded-xl bg-green-600 hover:bg-green-700"
+                          >
+                            Restore
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   ) : (
                     /* Active User Actions */
                     <>
@@ -456,7 +507,7 @@ export default function AdminUsersPage() {
     },
   ];
 
-  if (isLoading) {
+  if (isLoading || isStatLoading) {
     return (
       <div className="space-y-6">
         <div className="grid gap-4 md:grid-cols-4">
@@ -508,7 +559,11 @@ export default function AdminUsersPage() {
         columns={columns}
         data={users}
         searchKey="email"
-        searchPlaceholder="Search by email..."
+        searchPlaceholder="Search by name or email..."
+        pagination={pagination}
+        onPaginationChange={setPagination}
+        pageCount={pageCount}
+        onSearch={handleSearch}
       />
 
       <AlertDialog

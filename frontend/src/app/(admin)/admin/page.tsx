@@ -1,17 +1,24 @@
 "use client";
+
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
+import Image from "next/image";
 
 import { useProducts } from "@/hooks/use-products";
 import { useOrders } from "@/hooks/use-orders";
 import { useCategories } from "@/hooks/use-categories";
 import { StatsCard } from "@/components/admin/stats-card";
 import { RevenueChart } from "@/components/admin/revenue-chart";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Package,
   ShoppingCart,
   DollarSign,
   FolderTree,
@@ -20,32 +27,88 @@ import {
   Sprout,
   Leaf,
 } from "lucide-react";
-import Image from "next/image";
 import { formatCurrency } from "@/lib/utils";
+import { Product, Order } from "@/types";
+import { ORDER_STATUS_CONFIG } from "@/lib/constants";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
-  // Fetch all products for accurate total count
-  const { data: allProductsData, isLoading: productsLoading } = useProducts({ limit: 10000 });
-  const { data: orders, isLoading: ordersLoading } = useOrders();
+
+  const { data: productsData, isLoading: productsLoading } = useProducts({
+    limit: 10000,
+  });
+  const { data: ordersData, isLoading: ordersLoading } = useOrders({
+    limit: 10000,
+  });
   const { data: categories, isLoading: categoriesLoading } = useCategories();
 
   const isLoading = productsLoading || ordersLoading || categoriesLoading;
 
-  // Calculate stats
-  // Use 'total' from metadata if available, otherwise fallback to array length of large fetch
-  const totalProducts = (allProductsData as any)?.total || (allProductsData as any)?.data?.length || 0;
-  const totalOrders = orders?.length || 0;
-  const totalRevenue =
-    orders?.reduce((acc, order) => acc + Number(order.total), 0) || 0;
+  const orders = useMemo(() => ordersData?.data || [], [ordersData]);
+  const products = useMemo(() => productsData?.data || [], [productsData]);
+
+  // Comprehensive analytics calculation
+  const stats = useMemo(() => {
+    if (!orders.length)
+      return {
+        totalRevenue: 0,
+        totalOrders: 0,
+        revenueTrend: 0,
+        ordersTrend: 0,
+        successfulOrders: [] as Order[],
+      };
+
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+    const successfulOrders = orders.filter((o: Order) =>
+      ["PAID", "COMPLETED"].includes(o.status),
+    );
+    const totalRevenue = successfulOrders.reduce(
+      (acc: number, o: Order) => acc + Number(o.total),
+      0,
+    );
+
+    // Current period (last 30 days)
+    const currentOrders = successfulOrders.filter(
+      (o: Order) => new Date(o.createdAt) >= thirtyDaysAgo,
+    );
+    const currentRevenue = currentOrders.reduce(
+      (acc: number, o: Order) => acc + Number(o.total),
+      0,
+    );
+
+    // Previous period (30-60 days ago)
+    const previousOrders = successfulOrders.filter((o: Order) => {
+      const date = new Date(o.createdAt);
+      return date >= sixtyDaysAgo && date < thirtyDaysAgo;
+    });
+    const previousRevenue = previousOrders.reduce(
+      (acc: number, o: Order) => acc + Number(o.total),
+      0,
+    );
+
+    // Calculate trends
+    const calculateTrend = (curr: number, prev: number) => {
+      if (prev === 0) return curr > 0 ? 100 : 0;
+      return ((curr - prev) / prev) * 100;
+    };
+
+    return {
+      totalRevenue,
+      totalOrders: orders.length,
+      revenueTrend: calculateTrend(currentRevenue, previousRevenue),
+      ordersTrend: calculateTrend(currentOrders.length, previousOrders.length),
+      successfulOrders,
+    };
+  }, [orders]);
+
+  const totalProducts = productsData?.total || 0;
   const totalCategories = categories?.length || 0;
 
-  const products = (allProductsData as any)?.data || []; // For Top Products display
-
-  // Calculate monthly revenue from real orders
+  // Monthly revenue chart data
   const chartData = useMemo(() => {
-    if (!orders) return [];
-
     const last6Months = Array.from({ length: 6 }, (_, i) => {
       const d = new Date();
       d.setMonth(d.getMonth() - i);
@@ -53,28 +116,27 @@ export default function AdminDashboardPage() {
     }).reverse();
 
     return last6Months.map((date) => {
-      const monthStr = date.toLocaleString('default', { month: 'short' });
+      const monthStr = date.toLocaleString("default", { month: "short" });
       const year = date.getFullYear();
       const month = date.getMonth();
 
-      const monthlyRevenue = orders
-        .filter((order) => {
+      const monthlyRevenue = stats.successfulOrders
+        .filter((order: Order) => {
           const orderDate = new Date(order.createdAt);
           return (
             orderDate.getMonth() === month && orderDate.getFullYear() === year
           );
         })
-        .reduce((acc, order) => acc + Number(order.total), 0);
+        .reduce((acc: number, order: Order) => acc + Number(order.total), 0);
 
       return {
         date: monthStr,
         revenue: monthlyRevenue,
       };
     });
-  }, [orders]);
+  }, [stats.successfulOrders]);
 
-  // Recent orders
-  const recentOrders = orders?.slice(0, 5) || [];
+  const recentOrders = useMemo(() => orders.slice(0, 5), [orders]);
 
   if (isLoading) {
     return (
@@ -86,7 +148,7 @@ export default function AdminDashboardPage() {
         </div>
         <div className="grid gap-6 lg:grid-cols-3">
           <Skeleton className="h-[360px] lg:col-span-2 bg-secondary/50 rounded-2xl" />
-          <Skeleton className="h-[360px] bg-secondary/50 rounded-2xl" />
+          <Skeleton className="h-[420px] bg-secondary/50 rounded-2xl" />
         </div>
       </div>
     );
@@ -98,25 +160,31 @@ export default function AdminDashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Revenue"
-          value={formatCurrency(totalRevenue)}
+          value={formatCurrency(stats.totalRevenue)}
           icon={DollarSign}
-          description="Lifetime earnings"
-          trend={{ value: 12.5, isPositive: true }}
+          description="From successful orders"
+          trend={{
+            value: Math.abs(stats.revenueTrend),
+            isPositive: stats.revenueTrend >= 0,
+          }}
           iconClassName="bg-primary/10 text-primary"
         />
         <StatsCard
           title="Total Orders"
-          value={totalOrders}
+          value={stats.totalOrders}
           icon={ShoppingCart}
-          description="All time orders"
-          trend={{ value: 8.2, isPositive: true }}
+          description="Lifetime transactions"
+          trend={{
+            value: Math.abs(stats.ordersTrend),
+            isPositive: stats.ordersTrend >= 0,
+          }}
           iconClassName="bg-blue-50 text-blue-600"
         />
         <StatsCard
           title="Active Products"
           value={totalProducts}
           icon={Sprout}
-          description="Thriving listings"
+          description="In your greenhouse"
           iconClassName="bg-green-50 text-green-600"
         />
         <StatsCard
@@ -130,13 +198,11 @@ export default function AdminDashboardPage() {
 
       {/* Charts & Recent Activity */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Revenue Chart */}
         <div className="lg:col-span-2">
-          <RevenueChart data={chartData} total={totalRevenue} />
+          <RevenueChart data={chartData} total={stats.totalRevenue} />
         </div>
 
-        {/* Recent Orders */}
-        <Card className="bg-card border-border/50 shadow-sm rounded-[2rem]">
+        <Card className="bg-card border-border/50 shadow-sm rounded-[2rem] overflow-hidden">
           <CardHeader className="pb-3 border-b border-border/30">
             <div className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-accent" />
@@ -145,49 +211,54 @@ export default function AdminDashboardPage() {
               </CardTitle>
             </div>
             <CardDescription className="text-muted-foreground">
-              Latest customer orders
+              Latest activity
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4 pt-4">
+          <CardContent className="space-y-4 pt-4 px-4 overflow-y-auto max-h-[400px]">
             {recentOrders.length === 0 ? (
-              <div className="py-8 text-center">
+              <div className="py-12 text-center">
                 <ShoppingCart className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
-                <p className="text-sm text-muted-foreground">No orders yet</p>
+                <p className="text-sm text-muted-foreground font-medium">
+                  Clear fields, no orders yet
+                </p>
               </div>
             ) : (
-              recentOrders.map((order) => (
-                <div
-                  key={order.id}
-                  className="flex items-center gap-3 p-3 rounded-2xl bg-secondary/20 border border-transparent hover:border-primary/20 hover:bg-secondary/40 transition-all duration-200 cursor-pointer"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-background border border-border shadow-sm">
-                    <ShoppingCart className="h-4 w-4 text-primary" />
+              recentOrders.map((order) => {
+                const config = ORDER_STATUS_CONFIG[order.status] || {
+                  label: order.status,
+                  className: "bg-secondary text-secondary-foreground",
+                };
+                return (
+                  <div
+                    key={order.id}
+                    className="flex items-center gap-3 p-3 rounded-2xl bg-secondary/20 border border-transparent hover:border-primary/20 hover:bg-secondary/40 transition-all duration-200 cursor-pointer"
+                    onClick={() => router.push(`/admin/orders`)}
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-background border border-border shadow-sm flex-shrink-0">
+                      <ShoppingCart className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-foreground truncate">
+                        Order #{order.id}
+                      </p>
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-tight">
+                        {new Date(order.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="text-right flex flex-col items-end gap-1">
+                      <p className="text-sm font-black font-mono text-foreground leading-none">
+                        {formatCurrency(order.total)}
+                      </p>
+                      <Badge
+                        variant="secondary"
+                        className={`text-[9px] font-black uppercase px-2 py-0 h-4 border leading-none ${config.className}`}
+                      >
+                        {config.label}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-foreground truncate">
-                      Order #{order.id}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {order.items?.length || 0} items • {new Date(order.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-black font-mono text-foreground">
-                      {formatCurrency(order.total)}
-                    </p>
-                    <Badge
-                      variant="secondary"
-                      className={
-                        order.status === "PAID"
-                          ? "bg-green-100/50 text-green-700 border-green-200 text-[10px] font-bold"
-                          : "bg-amber-100/50 text-amber-700 border-amber-200 text-[10px] font-bold"
-                      }
-                    >
-                      {order.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </CardContent>
         </Card>
@@ -203,12 +274,12 @@ export default function AdminDashboardPage() {
             </CardTitle>
           </div>
           <CardDescription className="text-muted-foreground">
-            Your most popular plants & goods
+            Most popular stock
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-4">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {products?.slice(0, 4).map((product: any) => (
+            {products.slice(0, 4).map((product: Product) => (
               <div
                 key={product.id}
                 className="flex items-center gap-3 p-3 rounded-2xl bg-secondary/20 border border-transparent hover:border-primary/20 hover:bg-secondary/40 transition-all duration-200 cursor-pointer group"

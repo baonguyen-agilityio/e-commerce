@@ -56,8 +56,8 @@ export class CategoryService implements ICategoryService {
     if (category.products && category.products.length > 0) {
       throw new BadRequestError(ErrorMessages.CATEGORY_HAS_PRODUCTS);
     }
-    
-    await this.categoryRepository.delete(category.id);
+
+    await this.categoryRepository.softRemove(category);
     return true;
   }
 }

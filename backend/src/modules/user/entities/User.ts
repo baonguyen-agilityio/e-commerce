@@ -7,7 +7,12 @@ import {
   OneToOne,
   OneToMany,
   BeforeInsert,
+  Index,
+  BeforeSoftRemove,
+  AfterRecover,
 } from "typeorm";
+import { clerkClient } from "@clerk/express";
+import { InternalError } from "../../../shared/errors";
 import { Cart } from "../../cart/entities/Cart";
 import { Order } from "../../order/entities/Order";
 
@@ -23,13 +28,16 @@ export const ROLE_HIERARCHY: UserRole[] = [
   UserRole.STAFF,
   UserRole.ADMIN,
   UserRole.SUPER_ADMIN,
-]
+];
 
 export function getRoleLevel(role: UserRole): number {
   return ROLE_HIERARCHY.indexOf(role);
 }
 
-export function hasPermission(userRole: UserRole, requiredRole: UserRole): boolean {
+export function hasPermission(
+  userRole: UserRole,
+  requiredRole: UserRole,
+): boolean {
   return getRoleLevel(userRole) >= getRoleLevel(requiredRole);
 }
 
@@ -44,6 +52,7 @@ export class User {
   @Column({ type: "varchar", unique: true })
   clerkId: string;
 
+  @Index()
   @Column({ type: "varchar" })
   email: string;
 
@@ -79,6 +88,32 @@ export class User {
   generatePublicId() {
     if (!this.publicId) {
       this.publicId = this.clerkId;
+    }
+  }
+
+  @BeforeSoftRemove()
+  async banInClerk() {
+    if (!this.isBanned) {
+      try {
+        await clerkClient.users.banUser(this.clerkId);
+      } catch (error) {
+        throw new InternalError(
+          "Cloud identity sync failed: Unable to ban user in Clerk",
+        );
+      }
+    }
+  }
+
+  @AfterRecover()
+  async unbanInClerk() {
+    if (!this.isBanned) {
+      try {
+        await clerkClient.users.unbanUser(this.clerkId);
+      } catch (error) {
+        throw new InternalError(
+          "Cloud identity sync failed: Unable to unban user in Clerk",
+        );
+      }
     }
   }
 }

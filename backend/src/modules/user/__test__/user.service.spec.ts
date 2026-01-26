@@ -188,15 +188,26 @@ describe("UserService", () => {
   });
 
   describe("getAllUsers", () => {
-    it("should return users sorted by role and creation date", async () => {
-      const users = [mockCustomer, mockAdmin, mockSuperAdmin];
-      mockUserRepository.find.mockResolvedValue(users as User[]);
+    it("should return paginated users", async () => {
+      const users = [mockSuperAdmin, mockAdmin, mockCustomer];
 
-      const result = await userService.getAllUsers();
+      const mockQueryBuilder = {
+        withDeleted: vi.fn().mockReturnThis(),
+        skip: vi.fn().mockReturnThis(),
+        take: vi.fn().mockReturnThis(),
+        orderBy: vi.fn().mockReturnThis(),
+        getManyAndCount: vi.fn().mockResolvedValue([users, users.length]),
+      };
 
-      expect(result[0].role).toBe(UserRole.SUPER_ADMIN);
-      expect(result[1].role).toBe(UserRole.ADMIN);
-      expect(result[2].role).toBe(UserRole.CUSTOMER);
+      mockUserRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+
+      const result = await userService.getAllUsers({ page: 1, limit: 10 });
+
+      expect(result.data).toHaveLength(3);
+      expect(result.total).toBe(3);
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(10);
+      expect(result.data[0].role).toBe(UserRole.SUPER_ADMIN);
     });
   });
 

@@ -8,7 +8,6 @@ import {
   useUpdateProduct,
   useDeleteProduct,
 } from "@/hooks/use-products";
-import { useDebounce } from "@/hooks/useDebounce";
 import { useCategories } from "@/hooks/use-categories";
 import { Product } from "@/types";
 import { DataTable } from "@/components/admin/data-table";
@@ -42,13 +41,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Plus,
@@ -61,7 +53,6 @@ import {
   DollarSign,
   Sprout,
   Leaf,
-  Filter,
 } from "lucide-react";
 import { keepPreviousData } from "@tanstack/react-query";
 import Image from "next/image";
@@ -91,17 +82,23 @@ export default function AdminProductsPage() {
   }, []);
 
   // Products query (paginated, for the table)
-  const { data: productsData, isLoading: isTableLoading } = useProducts({
-    page: pagination.pageIndex + 1,
-    limit: pagination.pageSize,
-    search: searchTerm || undefined,
-    categoryId: selectedCategory === "all" ? undefined : Number(selectedCategory),
-    isActive: statusFilter === "all" ? undefined : statusFilter === "active",
-    inStock: stockFilter === "all" ? undefined : stockFilter === "in_stock",
-  }, { placeholderData: keepPreviousData });
+  const { data: productsData, isLoading: isTableLoading } = useProducts(
+    {
+      page: pagination.pageIndex + 1,
+      limit: pagination.pageSize,
+      search: searchTerm || undefined,
+      categoryId:
+        selectedCategory === "all" ? undefined : Number(selectedCategory),
+      isActive: statusFilter === "all" ? undefined : statusFilter === "active",
+      inStock: stockFilter === "all" ? undefined : stockFilter === "in_stock",
+    },
+    { placeholderData: keepPreviousData },
+  );
 
   // Stats query
-  const { data: allProductsData, isLoading: isStatsLoading } = useProducts({ limit: 9999 });
+  const { data: allProductsData, isLoading: isStatsLoading } = useProducts({
+    limit: 9999,
+  });
 
   const { data: categories } = useCategories();
   const createProduct = useCreateProduct();
@@ -112,16 +109,16 @@ export default function AdminProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
 
-  const products: Product[] = (productsData as any)?.data || [];
-  const pageCount: number = (productsData as any)?.totalPages || 0;
+  const products: Product[] = productsData?.data || [];
+  const pageCount: number = productsData?.totalPages || 0;
 
   // Calculate stats
-  const allProducts: Product[] = (allProductsData as any)?.data || [];
-  const totalProducts = (allProductsData as any)?.total || 0;
+  const allProducts: Product[] = allProductsData?.data || [];
+  const totalProducts = allProductsData?.total || 0;
   const activeProducts = allProducts.filter((p: Product) => p.isActive).length;
   const totalValue = allProducts.reduce(
     (acc: number, p: Product) => acc + Number(p.price) * p.stock,
-    0
+    0,
   );
 
   const handleCreate = async (data: Partial<Product>) => {
@@ -206,7 +203,10 @@ export default function AdminProductsPage() {
       accessorKey: "category",
       header: "Category",
       cell: ({ row }) => (
-        <Badge variant="outline" className="border-border text-muted-foreground font-medium">
+        <Badge
+          variant="outline"
+          className="border-border text-muted-foreground font-medium"
+        >
           {row.original.category?.name || "Uncategorized"}
         </Badge>
       ),
@@ -245,7 +245,10 @@ export default function AdminProductsPage() {
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40 bg-card border-border rounded-xl shadow-lg">
+          <DropdownMenuContent
+            align="end"
+            className="w-40 bg-card border-border rounded-xl shadow-lg"
+          >
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
@@ -302,7 +305,10 @@ export default function AdminProductsPage() {
       <div className="grid gap-4 md:grid-cols-3">
         {isStatsLoading ? (
           [...Array(3)].map((_, i) => (
-            <Skeleton key={i} className="h-28 w-full rounded-[2rem] bg-secondary/50" />
+            <Skeleton
+              key={i}
+              className="h-28 w-full rounded-[2rem] bg-secondary/50"
+            />
           ))
         ) : (
           <>
@@ -384,7 +390,9 @@ export default function AdminProductsPage() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-lg bg-card border-border rounded-[2rem]">
               <DialogHeader>
-                <DialogTitle className="text-foreground font-heading text-2xl">Add New Product</DialogTitle>
+                <DialogTitle className="text-foreground font-heading text-2xl">
+                  Add New Product
+                </DialogTitle>
                 <DialogDescription className="text-muted-foreground">
                   Fill in the details to add a new item to your garden.
                 </DialogDescription>
@@ -406,7 +414,9 @@ export default function AdminProductsPage() {
       >
         <DialogContent className="sm:max-w-lg bg-card border-border rounded-[2rem]">
           <DialogHeader>
-            <DialogTitle className="text-foreground font-heading text-2xl">Edit Product</DialogTitle>
+            <DialogTitle className="text-foreground font-heading text-2xl">
+              Edit Product
+            </DialogTitle>
             <DialogDescription className="text-muted-foreground">
               Update the product details below.
             </DialogDescription>
@@ -429,14 +439,18 @@ export default function AdminProductsPage() {
       >
         <AlertDialogContent className="bg-card border-border rounded-[2rem]">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-foreground font-heading">Delete Product</AlertDialogTitle>
+            <AlertDialogTitle className="text-foreground font-heading">
+              Delete Product
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground">
               Are you sure you want to compost &quot;{deletingProduct?.name}
               &quot;? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="cursor-pointer rounded-xl border-border hover:bg-secondary hover:text-foreground">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="cursor-pointer rounded-xl border-border hover:bg-secondary hover:text-foreground">
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-red-600 hover:bg-red-700 cursor-pointer rounded-xl"

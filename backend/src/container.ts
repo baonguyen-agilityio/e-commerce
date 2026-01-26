@@ -10,7 +10,6 @@ import { Category } from "./modules/category/entities/Category";
 import { Cart } from "./modules/cart/entities/Cart";
 import { CartItem } from "./modules/cart/entities/CartItem";
 import { Order } from "./modules/order/entities/Order";
-import { OrderItem } from "./modules/order/entities/OrderItem";
 import { IEmailService } from "./shared/interfaces/IEmailService";
 import { ResendEmailService } from "./shared/services/email/ResendEmailService";
 import { StripePaymentGateway } from "./shared/services/payment/StripePaymentGateway";
@@ -47,15 +46,16 @@ export function createContainer(dataSource: DataSource): Container {
   const cartController = new CartController(cartService);
 
   const orderRepository = dataSource.getRepository(Order);
-  const orderItemRepository = dataSource.getRepository(OrderItem);
   const paymentGateway = new StripePaymentGateway(env.STRIPE_SECRET_KEY);
-  const emailService: IEmailService = new ResendEmailService(env.RESEND_API_KEY);
+  const emailService: IEmailService = new ResendEmailService(
+    env.RESEND_API_KEY,
+  );
   const orderService = new OrderService(
     orderRepository,
     userRepository,
     cartRepository,
     paymentGateway,
-    emailService
+    emailService,
   );
   const orderController = new OrderController(orderService);
 
@@ -64,6 +64,6 @@ export function createContainer(dataSource: DataSource): Container {
     productController,
     categoryController,
     cartController,
-    orderController
+    orderController,
   };
 }

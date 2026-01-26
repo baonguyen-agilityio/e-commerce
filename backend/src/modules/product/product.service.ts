@@ -11,7 +11,7 @@ import { PaginatedResult } from "../../shared/interfaces/pagination";
 import { ErrorMessages } from "../../shared/errors/messages";
 
 export class ProductService implements IProductService {
-  constructor(private readonly productRepository: Repository<Product>) { }
+  constructor(private readonly productRepository: Repository<Product>) {}
 
   private async findProductOrThrow(id: number): Promise<Product> {
     const product = await this.productRepository.findOne({
@@ -124,7 +124,7 @@ export class ProductService implements IProductService {
 
   async deleteProduct(id: number): Promise<boolean> {
     const product = await this.findProductOrThrow(id);
-    await this.productRepository.delete(product.id);
+    await this.productRepository.softRemove(product);
     return true;
   }
 }

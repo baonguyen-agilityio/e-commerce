@@ -11,6 +11,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { PaymentForm } from "@/components/payment-form";
+import { useState } from "react";
 
 export default function CartPage() {
   const { isSignedIn } = useAuth();
@@ -19,6 +28,7 @@ export default function CartPage() {
   const removeFromCart = useRemoveFromCart();
   const checkout = useCheckout();
   const router = useRouter();
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   const subtotal =
     cart?.items?.reduce(
@@ -34,9 +44,10 @@ export default function CartPage() {
     }
   };
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (paymentMethodId: string) => {
     try {
-      const response = await checkout.mutateAsync();
+      const response = await checkout.mutateAsync(paymentMethodId);
+      setIsCheckoutOpen(false);
       router.push(`/checkout/success?orderId=${response.order.id}`);
     } catch (error) {
       // Error handled in hook
@@ -231,10 +242,10 @@ export default function CartPage() {
 
               <Button
                 className="w-full h-14 text-lg font-bold rounded-2xl cursor-pointer bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl shadow-primary/20 transition-all active:scale-95 group"
-                onClick={handleCheckout}
+                onClick={() => setIsCheckoutOpen(true)}
                 disabled={checkout.isPending}
               >
-                {checkout.isPending ? "Processing..." : "Proceed to Checkout"}
+                Proceed to Checkout
                 <ArrowRight className="h-5 w-5 ml-2 transition-transform group-hover:translate-x-1" />
               </Button>
 
@@ -253,7 +264,26 @@ export default function CartPage() {
           </div>
         </div>
       </div>
+
+      <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
+        <DialogContent className="sm:max-w-[450px] bg-card border-border rounded-[2.5rem] p-8">
+          <DialogHeader className="mb-6">
+            <DialogTitle className="font-heading text-3xl font-black tracking-tight flex items-center gap-3">
+              <ShieldCheck className="h-8 w-8 text-primary" />
+              Secure Checkout
+            </DialogTitle>
+            <DialogDescription className="text-base font-medium">
+              You are about to pay <strong>{formatCurrency(subtotal)}</strong> for your garden selection.
+            </DialogDescription>
+          </DialogHeader>
+
+          <PaymentForm
+            amount={subtotal}
+            onSuccess={handleCheckout}
+            isPending={checkout.isPending}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-

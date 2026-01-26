@@ -3,13 +3,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
-import { UserRole } from "@/types";
+import { UserRole, UserQueryParams, PaginatedResult, User } from "@/types";
 import { useAuth } from "@clerk/nextjs";
 
 export function useCurrentUser() {
   const { isLoaded, isSignedIn } = useAuth();
 
-  const query = useQuery({
+  const query = useQuery<User>({
     queryKey: ["me"],
     queryFn: () => api.getMe(),
     enabled: isLoaded && isSignedIn!, // Only fetch if Clerk is loaded and user is signed in
@@ -24,10 +24,11 @@ export function useCurrentUser() {
   };
 }
 
-export function useUsers() {
-  return useQuery({
-    queryKey: ["users"],
-    queryFn: () => api.getAllUsers(),
+export function useUsers(params?: UserQueryParams, options?: object) {
+  return useQuery<PaginatedResult<User>>({
+    queryKey: ["users", params],
+    queryFn: () => api.getAllUsers(params),
+    ...options,
   });
 }
 

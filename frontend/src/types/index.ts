@@ -18,6 +18,12 @@ export interface User {
   deletedAt: string | null;
 }
 
+export interface UserQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+}
+
 // Category types
 export interface Category {
   id: number;
@@ -90,6 +96,12 @@ export interface Order {
   items: OrderItem[];
 }
 
+export interface OrderQueryParams {
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
 // API Response types
 export interface PaginatedResult<T> {
   data: T[];
@@ -103,4 +115,3 @@ export interface ApiError {
   message: string;
   statusCode: number;
 }
-

@@ -8,7 +8,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Package, Calendar, Tag, ArrowLeft, ShoppingBag } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { cn, formatCurrency, formatDate } from "@/lib/utils";
+import { ORDER_STATUS_CONFIG } from "@/lib/constants";
 import { use } from "react";
 
 export default function OrderDetailsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -90,11 +91,11 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
                 <Badge
                     variant="outline"
                     className={`
-                        px-4 py-1.5 font-bold uppercase tracking-wider text-sm border-0
-                        ${order.status === 'completed' ? 'bg-green-500/10 text-green-600' : 'bg-secondary text-foreground'}
+                        px-4 py-1.5 font-bold uppercase tracking-wider text-xs border
+                        ${ORDER_STATUS_CONFIG[order.status]?.className || 'bg-secondary text-foreground'}
                     `}
                 >
-                    {order.status}
+                    {ORDER_STATUS_CONFIG[order.status]?.label || order.status}
                 </Badge>
             </div>
 
@@ -173,7 +174,9 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
                                 </div>
                                 <div className="text-sm">
                                     <p className="font-bold text-foreground">Status</p>
-                                    <p className="text-muted-foreground capitalize">{order.status}</p>
+                                    <p className={cn("capitalize font-medium", ORDER_STATUS_CONFIG[order.status]?.className.split(' ').find(c => c.startsWith('text-')))}>
+                                        {ORDER_STATUS_CONFIG[order.status]?.label || order.status}
+                                    </p>
                                 </div>
                             </div>
                             <div className="flex gap-4">

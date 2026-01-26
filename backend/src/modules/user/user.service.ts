@@ -1,12 +1,17 @@
 import { Repository } from "typeorm";
-import { getRoleLevel, User, UserRole } from "./entities/User";
+import { getRoleLevel, User, UserRole, ROLE_HIERARCHY } from "./entities/User";
 import { IUserService, CreateUserDto, ChangeRoleDto } from "./user.interface";
-import { BadRequestError, ForbiddenError, InternalError, NotFoundError } from "../../shared/errors";
+import {
+  BadRequestError,
+  ForbiddenError,
+  InternalError,
+  NotFoundError,
+} from "../../shared/errors";
 import { clerkClient } from "@clerk/express";
 import { ErrorMessages } from "../../shared/errors/messages";
 
 export class UserService implements IUserService {
-  constructor(private readonly userRepository: Repository<User>) { }
+  constructor(private readonly userRepository: Repository<User>) {}
 
   private async findUserOrThrow(clerkId: string): Promise<User> {
     const user = await this.userRepository.findOne({ where: { clerkId } });
@@ -35,24 +40,61 @@ export class UserService implements IUserService {
           publicMetadata: { role: data.role },
         });
       } catch (error) {
-        console.error('Failed to sync role to Clerk metadata:', error);
+        console.error("Failed to sync role to Clerk metadata:", error);
       }
     }
 
     return user;
   }
 
-  async getAllUsers(): Promise<User[]> {
-    const users = await this.userRepository.find({
-      withDeleted: true,
-    });
-    return users.sort((a, b) => {
-      const roleDiff = getRoleLevel(b.role) - getRoleLevel(a.role);
-      if (roleDiff !== 0) {
-        return roleDiff;
-      }
-      return a.createdAt.getTime() - b.createdAt.getTime();
-    });
+  async getAllUsers(
+    params: { page?: number; limit?: number; search?: string } = {},
+  ): Promise<{
+    data: User[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const page = params.page || 1;
+    const limit = params.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const queryBuilder = this.userRepository
+      .createQueryBuilder("user")
+      .withDeleted();
+
+    const reversedHierarchy = [...ROLE_HIERARCHY].reverse();
+    const caseStatement = reversedHierarchy
+      .map((role, index) => `WHEN user.role = '${role}' THEN ${index + 1}`)
+      .join(" ");
+
+    queryBuilder
+      .addSelect(
+        `CASE ${caseStatement} ELSE ${ROLE_HIERARCHY.length + 1} END`,
+        "role_priority",
+      )
+      .orderBy("role_priority", "ASC")
+      .addOrderBy("user.createdAt", "DESC")
+      .skip(skip)
+      .take(limit);
+
+    if (params.search) {
+      queryBuilder.andWhere(
+        "(user.name ILIKE :search OR user.email ILIKE :search)",
+        { search: `%${params.search}%` },
+      );
+    }
+
+    const [users, total] = await queryBuilder.getManyAndCount();
+
+    return {
+      data: users,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async changeRole(changeRoleDto: ChangeRoleDto): Promise<User> {
@@ -107,8 +149,7 @@ export class UserService implements IUserService {
         where: { role: UserRole.ADMIN },
       });
       if (adminCount <= 1) {
-        throw new BadRequestError(
-          ErrorMessages.CANNOT_DEMOTE_LAST_ADMIN);
+        throw new BadRequestError(ErrorMessages.CANNOT_DEMOTE_LAST_ADMIN);
       }
     }
 
@@ -120,7 +161,10 @@ export class UserService implements IUserService {
     return targetUser;
   }
 
-  async deleteUser(clerkId: string, requestingUserRole: UserRole): Promise<boolean> {
+  async deleteUser(
+    clerkId: string,
+    requestingUserRole: UserRole,
+  ): Promise<boolean> {
     const user = await this.findUserOrThrow(clerkId);
     const adminCount = await this.userRepository.count({
       where: { role: UserRole.ADMIN },
@@ -129,31 +173,15 @@ export class UserService implements IUserService {
       throw new ForbiddenError(ErrorMessages.CANNOT_DELETE_SUPER_ADMIN);
     }
     if (getRoleLevel(user.role) >= getRoleLevel(requestingUserRole)) {
-      throw new ForbiddenError(ErrorMessages.CANNOT_DELETE_USER_WITH_HIGHER_ROLE);
+      throw new ForbiddenError(
+        ErrorMessages.CANNOT_DELETE_USER_WITH_HIGHER_ROLE,
+      );
     }
     if (user.role === UserRole.ADMIN && adminCount <= 1) {
       throw new BadRequestError(ErrorMessages.CANNOT_DELETE_LAST_ADMIN);
     }
 
-    if (!user.isBanned) {
-      try {
-        await clerkClient.users.banUser(clerkId);
-      } catch (error) {
-        throw new InternalError(ErrorMessages.FAILED_TO_DELETE_USER_FROM_CLERK);
-      }
-    }
-
-    try {
-      await this.userRepository.softDelete({ clerkId });
-    } catch (error) {
-      if (!user.isBanned) {
-        await clerkClient.users.unbanUser(clerkId).catch(() => {
-          console.error('Failed to rollback Clerk ban after DB error');
-        });
-      }
-      throw error;
-    }
-
+    await this.userRepository.softRemove(user);
     return true;
   }
 
@@ -171,21 +199,13 @@ export class UserService implements IUserService {
       throw new BadRequestError("User is not deleted");
     }
 
-    await this.userRepository.restore({ clerkId });
-
-    if (!user.isBanned) {
-      try {
-        await clerkClient.users.unbanUser(clerkId);
-      } catch (error) {
-        await this.userRepository.softDelete({ clerkId });
-        throw new InternalError("Failed to restore user in Clerk");
-      }
-    }
-
-    return await this.findUserOrThrow(clerkId);
+    return await this.userRepository.recover(user);
   }
 
-  async toggleBan(clerkId: string, requestingUserRole: UserRole): Promise<User> {
+  async toggleBan(
+    clerkId: string,
+    requestingUserRole: UserRole,
+  ): Promise<User> {
     const user = await this.findUserOrThrow(clerkId);
     if (getRoleLevel(user.role) >= getRoleLevel(requestingUserRole)) {
       throw new ForbiddenError(ErrorMessages.CANNOT_BAN_USER_WITH_HIGHER_ROLE);
@@ -200,7 +220,10 @@ export class UserService implements IUserService {
     return this.userRepository.save(user);
   }
 
-  async toggleLock(clerkId: string, requestingUserRole: UserRole): Promise<User> {
+  async toggleLock(
+    clerkId: string,
+    requestingUserRole: UserRole,
+  ): Promise<User> {
     const user = await this.findUserOrThrow(clerkId);
     if (getRoleLevel(user.role) >= getRoleLevel(requestingUserRole)) {
       throw new ForbiddenError(ErrorMessages.CANNOT_LOCK_USER_WITH_HIGHER_ROLE);

@@ -4,8 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Product } from "@/types";
 import { Order } from "@/types";
+import { ORDER_STATUS_CONFIG } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -54,13 +54,11 @@ export function OrderCard({ order }: OrderCardProps) {
                             <Badge
                                 variant="outline"
                                 className={cn(
-                                    "border-border font-bold uppercase tracking-wider text-xs",
-                                    order.status === "completed"
-                                        ? "bg-green-500/10 text-green-600 border-green-200"
-                                        : "bg-secondary/50 text-foreground"
+                                    "font-bold uppercase tracking-wider text-[10px] h-5 border",
+                                    ORDER_STATUS_CONFIG[order.status]?.className || "bg-secondary/50 text-foreground"
                                 )}
                             >
-                                {order.status}
+                                {ORDER_STATUS_CONFIG[order.status]?.label || order.status}
                             </Badge>
                         </div>
                         <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium">

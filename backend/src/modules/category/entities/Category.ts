@@ -1,17 +1,32 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import {
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  Index,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from "typeorm";
 import { Product } from "../../product/entities/Product";
 
-@Entity('categories')
+@Entity("categories")
 export class Category {
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @Column({ type: 'varchar' })
-    name: string;
-    
-    @Column({ type: 'text', nullable: true })
-    description: string;
+  @Index()
+  @Column({ type: "varchar" })
+  name: string;
 
-    @OneToMany(() => Product, (product) => product.category)
-    products: Product[];
+  @Column({ type: "text", nullable: true })
+  description: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt: Date | null;
+
+  @OneToMany(() => Product, (product) => product.category)
+  products: Product[];
 }

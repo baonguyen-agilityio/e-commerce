@@ -1,32 +1,53 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from "typeorm";
 import { OrderItem } from "./OrderItem";
 import { User } from "../../user/entities/User";
 
-@Entity('orders')
+export enum OrderStatus {
+  PENDING_PAYMENT = "PENDING_PAYMENT",
+  PAID = "PAID",
+  FAILED = "FAILED",
+  CANCELLED = "CANCELLED",
+  COMPLETED = "COMPLETED",
+}
+
+@Entity("orders")
 export class Order {
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @Column({ type: 'int' })
-    userId: number;
+  @Index()
+  @Column({ type: "int" })
+  userId: number;
 
-    @ManyToOne(() => User, (user) => user.orders, { onDelete: 'CASCADE' })
-    @JoinColumn({ name: 'userId' })
-    user: User
+  @ManyToOne(() => User, (user) => user.orders, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "userId" })
+  user: User;
 
-    @Column({ type: 'decimal', precision: 10, scale: 2 })
-    total: number;
+  @Column({ type: "decimal", precision: 10, scale: 2 })
+  total: number;
 
-    @Column({ type: 'varchar' })
-    status: string;
+  @Column({
+    type: "enum",
+    enum: OrderStatus,
+    default: OrderStatus.PENDING_PAYMENT,
+  })
+  status: OrderStatus;
 
-    @Column({ type: 'varchar', nullable: true })
-    paymentId: string;
+  @Column({ type: "varchar", nullable: true })
+  paymentId: string;
 
-    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-    createdAt: Date;
+  @Index()
+  @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
+  createdAt: Date;
 
-    @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })
-    items: OrderItem[];
-    
+  @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })
+  items: OrderItem[];
 }
