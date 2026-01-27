@@ -4,8 +4,8 @@ import { User, UserRole } from "../entities/User";
 import {
   createMockRepository,
   MockRepository,
-} from "../../../test/mocks/repository.mock";
-import { BadRequestError, ForbiddenError } from "../../../shared/errors";
+} from "@/test/mocks/repository.mock";
+import { BadRequestError, ForbiddenError } from "@/shared/errors";
 
 describe("UserService", () => {
   let userService: UserService;

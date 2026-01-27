@@ -1,5 +1,5 @@
 import { SessionAuthObject } from "@clerk/express";
-import { UserRole } from "../modules/user/entities/User";
+import { UserRole } from "@/modules/user/entities/User";
 
 declare global {
   namespace Express {
@@ -12,4 +12,4 @@ declare global {
   }
 }
 
-export {};
+export { };

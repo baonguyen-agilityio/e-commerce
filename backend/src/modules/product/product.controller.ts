@@ -1,17 +1,15 @@
 import { Request, Response } from "express";
 import { ProductService } from "./product.service";
-import { asyncHandler } from "../../shared/middleware/asyncHandler";
 
 export class ProductController {
   constructor(private readonly productService: ProductService) { }
 
-  getAllProducts = asyncHandler(async (req: Request, res: Response) => {
-    const { page, limit, search, category, categoryId, isActive, inStock, minPrice, maxPrice, sort, order } =
+  getAllProducts = async (req: Request, res: Response) => {
+    const { page, limit, search, category, categoryPublicId, isActive, inStock, minPrice, maxPrice, sort, order } =
       req.query;
 
     const pageNum = parseInt(page as string, 10);
     const limitNum = parseInt(limit as string, 10);
-    const categoryIdNum = categoryId ? parseInt(categoryId as string, 10) : undefined;
     const isActiveBool = isActive === "true" ? true : isActive === "false" ? false : undefined;
     const inStockBool = inStock === "true" ? true : inStock === "false" ? false : undefined;
 
@@ -23,7 +21,7 @@ export class ProductController {
       limit: isNaN(limitNum) ? 10 : limitNum,
       search: search as string | undefined,
       category: category as string | undefined,
-      categoryId: categoryIdNum,
+      categoryPublicId: categoryPublicId as string | undefined,
       isActive: isActiveBool,
       inStock: inStockBool,
       minPrice: (minPriceNum !== undefined && isNaN(minPriceNum)) ? undefined : minPriceNum,
@@ -34,33 +32,33 @@ export class ProductController {
 
     const result = await this.productService.getAllProducts(params);
     res.json(result);
-  });
+  };
 
-  getProductById = asyncHandler(async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id, 10);
-    const product = await this.productService.getProductById(id);
+  getProductByPublicId = async (req: Request, res: Response) => {
+    const { publicId } = req.params;
+    const product = await this.productService.getProductByPublicId(publicId);
     res.json(product);
-  });
+  };
 
-  createProduct = asyncHandler(async (req: Request, res: Response) => {
+  createProduct = async (req: Request, res: Response) => {
     const productData = req.body;
     const newProduct = await this.productService.createProduct(productData);
     res.status(201).json(newProduct);
-  });
+  };
 
-  updateProduct = asyncHandler(async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id, 10);
+  updateProduct = async (req: Request, res: Response) => {
+    const { publicId } = req.params;
     const productData = req.body;
     const updatedProduct = await this.productService.updateProduct(
-      id,
+      publicId,
       productData,
     );
     res.json(updatedProduct);
-  });
+  };
 
-  deleteProduct = asyncHandler(async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id, 10);
-    const deleted = await this.productService.deleteProduct(id);
+  deleteProduct = async (req: Request, res: Response) => {
+    const { publicId } = req.params;
+    const deleted = await this.productService.deleteProduct(publicId);
     res.json(deleted);
-  });
+  };
 }

@@ -4,14 +4,13 @@ import { IUserService, CreateUserDto, ChangeRoleDto } from "./user.interface";
 import {
   BadRequestError,
   ForbiddenError,
-  InternalError,
   NotFoundError,
-} from "../../shared/errors";
+} from "@/shared/errors";
 import { clerkClient } from "@clerk/express";
-import { ErrorMessages } from "../../shared/errors/messages";
+import { ErrorMessages } from "@/shared/errors/messages";
 
 export class UserService implements IUserService {
-  constructor(private readonly userRepository: Repository<User>) {}
+  constructor(private readonly userRepository: Repository<User>) { }
 
   private async findUserOrThrow(clerkId: string): Promise<User> {
     const user = await this.userRepository.findOne({ where: { clerkId } });

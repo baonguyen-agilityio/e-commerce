@@ -58,14 +58,14 @@ export default function AdminCategoriesPage() {
 
   const handleUpdate = async (data: { name: string; description?: string }) => {
     if (editingCategory) {
-      await updateCategory.mutateAsync({ id: editingCategory.id, data });
+      await updateCategory.mutateAsync({ publicId: editingCategory.publicId, data });
       setEditingCategory(null);
     }
   };
 
   const handleDelete = async () => {
     if (deletingCategory) {
-      await deleteCategory.mutateAsync(deletingCategory.id);
+      await deleteCategory.mutateAsync(deletingCategory.publicId);
       setDeletingCategory(null);
     }
   };
@@ -79,7 +79,7 @@ export default function AdminCategoriesPage() {
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary/30">
             <Hash className="h-4 w-4 text-muted-foreground" />
           </div>
-          <span className="font-mono font-bold text-muted-foreground">{row.original.id}</span>
+          <span className="font-mono font-bold text-muted-foreground">{row.original.publicId}</span>
         </div>
       ),
     },

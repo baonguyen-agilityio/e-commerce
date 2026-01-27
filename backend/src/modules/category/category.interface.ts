@@ -1,4 +1,4 @@
-import { PaginatedResult } from "../../shared/interfaces/pagination";
+import { PaginatedResult } from "@/shared/interfaces/pagination";
 import { Category } from "./entities/Category";
 
 export interface CreateCategoryDto {
@@ -13,11 +13,11 @@ export interface UpdateCategoryDto {
 
 export interface ICategoryService {
   getAllCategories(): Promise<PaginatedResult<Category>>;
-  getCategoryById(id: number): Promise<Category | null>;
+  getCategoryById(publicId: string): Promise<Category | null>;
   createCategory(data: CreateCategoryDto): Promise<Category>;
   updateCategory(
-    id: number,
+    publicId: string,
     data: Partial<UpdateCategoryDto>,
   ): Promise<Category | null>;
-    deleteCategory(id: number): Promise<boolean>;
+  deleteCategory(publicId: string): Promise<boolean>;
 }

@@ -9,15 +9,22 @@ import {
   DeleteDateColumn,
   Index,
   JoinColumn,
+  BeforeInsert,
+  BeforeUpdate,
 } from "typeorm";
-import { Category } from "../../category/entities/Category";
-import { CartItem } from "../../cart/entities/CartItem";
-import { OrderItem } from "../../order/entities/OrderItem";
+import { randomUUID } from "node:crypto";
+import { Category } from "@/modules/category/entities/Category";
+import { CartItem } from "@/modules/cart/entities/CartItem";
+import { OrderItem } from "@/modules/order/entities/OrderItem";
 
 @Entity("products")
 export class Product {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @Index({ unique: true })
+  @Column({ type: "varchar", unique: true })
+  publicId: string;
 
   @Index()
   @Column({ type: "varchar" })
@@ -63,4 +70,12 @@ export class Product {
 
   @OneToMany(() => OrderItem, (orderItem) => orderItem.product)
   orderItems: OrderItem[];
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  generatePublicId() {
+    if (!this.publicId) {
+      this.publicId = randomUUID();
+    }
+  }
 }

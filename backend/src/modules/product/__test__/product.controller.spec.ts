@@ -4,10 +4,10 @@ import express from "express";
 import { ProductController } from "../product.controller";
 import { ProductService } from "../product.service";
 import { createProductRoutes } from "../product.routes";
-import { createMockProduct } from "../../../test/factories/product.factory";
-import { errorHandler } from "../../../shared/middleware/errorHandler";
+import { createMockProduct } from "@/test/factories/product.factory";
+import { errorHandler } from "@/shared/middleware/errorHandler";
 
-vi.mock("../../../shared/middleware/requireAuth", () => ({
+vi.mock("@/shared/middleware/requireAuth", () => ({
     requireAuth: () => (req: any, res: any, next: any) => next(),
 }));
 
@@ -18,7 +18,7 @@ describe("ProductController", () => {
     beforeEach(() => {
         mockProductService = {
             getAllProducts: vi.fn(),
-            getProductById: vi.fn(),
+            getProductByPublicId: vi.fn(),
             createProduct: vi.fn(),
             updateProduct: vi.fn(),
             deleteProduct: vi.fn(),
@@ -58,16 +58,16 @@ describe("ProductController", () => {
         });
     });
 
-    describe("GET /products/:id", () => {
+    describe("GET /products/:publicId", () => {
         it("should return 200 and the product", async () => {
-            const product = createMockProduct({ id: 99 });
-            vi.mocked(mockProductService.getProductById).mockResolvedValue(product);
+            const product = createMockProduct({ publicId: "prod-99" });
+            vi.mocked(mockProductService.getProductByPublicId).mockResolvedValue(product);
 
-            const response = await request(app).get("/products/99");
+            const response = await request(app).get("/products/prod-99");
 
             expect(response.status).toBe(200);
             expect(response.body).toEqual(JSON.parse(JSON.stringify(product)));
-            expect(mockProductService.getProductById).toHaveBeenCalledWith(99);
+            expect(mockProductService.getProductByPublicId).toHaveBeenCalledWith("prod-99");
         });
     });
 
@@ -78,10 +78,10 @@ describe("ProductController", () => {
                 price: 50.00,
                 description: "A test product",
                 stock: 5,
-                categoryId: 1
+                categoryPublicId: "cat-1"
             };
 
-            const createdProduct = createMockProduct({ ...newProductData, id: 101 });
+            const createdProduct = createMockProduct({ ...newProductData, publicId: "prod-101" });
             vi.mocked(mockProductService.createProduct).mockResolvedValue(createdProduct);
 
             const response = await request(app)
@@ -91,7 +91,7 @@ describe("ProductController", () => {
             expect(response.status).toBe(201);
             expect(response.body).toMatchObject({
                 name: createdProduct.name,
-                id: 101
+                publicId: "prod-101"
             });
             expect(mockProductService.createProduct).toHaveBeenCalledWith(expect.objectContaining(newProductData));
         });
@@ -108,32 +108,32 @@ describe("ProductController", () => {
         });
     });
 
-    describe("PUT /products/:id", () => {
+    describe("PUT /products/:publicId", () => {
         it("should return 200 and updated product", async () => {
             const updateData = { name: "Updated Name" };
-            const updatedProduct = createMockProduct({ id: 10, ...updateData });
+            const updatedProduct = createMockProduct({ publicId: "prod-10", ...updateData });
 
             vi.mocked(mockProductService.updateProduct).mockResolvedValue(updatedProduct);
 
             const response = await request(app)
-                .put("/products/10")
+                .put("/products/prod-10")
                 .send(updateData);
 
             expect(response.status).toBe(200);
             expect(response.body.name).toBe("Updated Name");
-            expect(mockProductService.updateProduct).toHaveBeenCalledWith(10, expect.objectContaining(updateData));
+            expect(mockProductService.updateProduct).toHaveBeenCalledWith("prod-10", expect.objectContaining(updateData));
         });
     });
 
-    describe("DELETE /products/:id", () => {
+    describe("DELETE /products/:publicId", () => {
         it("should return 200 and result boolean", async () => {
             vi.mocked(mockProductService.deleteProduct).mockResolvedValue(true);
 
-            const response = await request(app).delete("/products/123");
+            const response = await request(app).delete("/products/prod-123");
 
             expect(response.status).toBe(200);
             expect(response.body).toBe(true);
-            expect(mockProductService.deleteProduct).toHaveBeenCalledWith(123);
+            expect(mockProductService.deleteProduct).toHaveBeenCalledWith("prod-123");
         });
     });
 });

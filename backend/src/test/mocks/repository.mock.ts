@@ -23,6 +23,8 @@ export const createMockRepository = <T>() => ({
   save: vi.fn(),
   create: vi.fn(),
   delete: vi.fn(),
+  softDelete: vi.fn(),
+  softRemove: vi.fn(),
   update: vi.fn(),
   count: vi.fn(),
   createQueryBuilder: vi.fn(() => createMockQueryBuilder<T>()),

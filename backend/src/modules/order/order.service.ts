@@ -1,19 +1,19 @@
 import { Repository } from "typeorm";
 import { Order, OrderStatus } from "./entities/Order";
 import { CheckoutResult, IOrderService } from "./order.interface";
-import { hasPermission, User, UserRole } from "../user/entities/User";
-import { Cart } from "../cart/entities/Cart";
-import { CartItem } from "../cart/entities/CartItem";
+import { hasPermission, User, UserRole } from "@modules/user/entities/User";
+import { Cart } from "@modules/cart/entities/Cart";
+import { CartItem } from "@modules/cart/entities/CartItem";
 import { OrderItem } from "./entities/OrderItem";
-import { Product } from "../product/entities/Product";
-import { IPaymentGateway } from "../../shared/interfaces/IPaymentGateway";
+import { Product } from "@modules/product/entities/Product";
+import { IPaymentGateway } from "@shared/interfaces/IPaymentGateway";
 import {
   BadRequestError,
   ForbiddenError,
   NotFoundError,
-} from "../../shared/errors";
-import { ErrorMessages } from "../../shared/errors/messages";
-import { IEmailService } from "../../shared/interfaces/IEmailService";
+} from "@shared/errors";
+import { ErrorMessages } from "@shared/errors/messages";
+import { IEmailService } from "@shared/interfaces/IEmailService";
 
 export class OrderService implements IOrderService {
   constructor(
@@ -22,7 +22,7 @@ export class OrderService implements IOrderService {
     private readonly cartRepository: Repository<Cart>,
     private readonly paymentGateway: IPaymentGateway,
     private readonly emailService: IEmailService,
-  ) {}
+  ) { }
 
   private async findUserOrThrow(clerkId: string): Promise<User> {
     const user = await this.userRepository.findOneBy({ clerkId });
@@ -38,7 +38,7 @@ export class OrderService implements IOrderService {
   ): Promise<CheckoutResult> {
     const user = await this.findUserOrThrow(clerkId);
     const cart = await this.cartRepository.findOne({
-      where: { user: { id: user.id } },
+      where: { clerkId },
       relations: ["items", "items.product"],
     });
 
@@ -54,7 +54,7 @@ export class OrderService implements IOrderService {
 
     for (const item of cart.items) {
       const product = await this.orderRepository.manager.findOne(Product, {
-        where: { id: item.productId },
+        where: { publicId: item.product.publicId },
       });
 
       if (!product || product.stock < item.quantity) {
@@ -76,11 +76,11 @@ export class OrderService implements IOrderService {
       }
     }
 
-    const orderId = await this.orderRepository.manager.transaction(
+    const orderPublicId = await this.orderRepository.manager.transaction(
       async (manager) => {
         for (const item of cart.items) {
           const product = await manager.findOne(Product, {
-            where: { id: item.productId },
+            where: { publicId: item.product.publicId },
             lock: { mode: "pessimistic_write" },
           });
 
@@ -109,26 +109,26 @@ export class OrderService implements IOrderService {
         await manager.save(orderItems);
 
         for (const item of cart.items) {
-          await manager.update(Product, item.productId, {
+          await manager.update(Product, item.product.id, {
             stock: () => `stock - ${item.quantity}`,
           });
         }
 
-        return order.id;
+        return order.publicId;
       },
     );
 
     const paymentResult = await this.paymentGateway.processPayment({
       amount: total,
       currency: "usd",
-      description: `Order #${orderId} for ${user.email}`,
+      description: `Order #${orderPublicId} for ${user.email}`,
       paymentMethodId,
     });
 
     const finalOrder = await this.orderRepository.manager.transaction(
       async (manager) => {
         const order = await manager.findOne(Order, {
-          where: { id: orderId },
+          where: { publicId: orderPublicId },
           relations: ["items", "items.product"],
         });
 
@@ -180,12 +180,12 @@ export class OrderService implements IOrderService {
   }
 
   async getOrderById(
-    orderId: number,
+    publicId: string,
     clerkId: string,
     role: UserRole,
   ): Promise<Order | null> {
     const order = await this.orderRepository.findOne({
-      where: { id: orderId },
+      where: { publicId },
       relations: ["items", "items.product"],
     });
 
@@ -228,9 +228,7 @@ export class OrderService implements IOrderService {
       .take(limit);
 
     if (params.search) {
-      if (!isNaN(Number(params.search))) {
-        queryBuilder.andWhere("order.id = :id", { id: Number(params.search) });
-      }
+      queryBuilder.andWhere("order.publicId LIKE :search", { search: `%${params.search}%` });
     }
 
     const [data, total] = await queryBuilder.getManyAndCount();

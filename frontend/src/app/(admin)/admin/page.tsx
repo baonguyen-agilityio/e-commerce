@@ -239,7 +239,7 @@ export default function AdminDashboardPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-foreground truncate">
-                        Order #{order.id}
+                        Order #{order.publicId}
                       </p>
                       <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-tight">
                         {new Date(order.createdAt).toLocaleDateString()}
@@ -283,7 +283,7 @@ export default function AdminDashboardPage() {
               <div
                 key={product.id}
                 className="flex items-center gap-3 p-3 rounded-2xl bg-secondary/20 border border-transparent hover:border-primary/20 hover:bg-secondary/40 transition-all duration-200 cursor-pointer group"
-                onClick={() => router.push(`/admin/products/${product.id}`)}
+                onClick={() => router.push(`/admin/products/${product.publicId}`)}
               >
                 <div className="relative h-12 w-12 rounded-xl overflow-hidden bg-background border border-border flex-shrink-0 group-hover:scale-105 transition-transform">
                   {product.imageUrl ? (

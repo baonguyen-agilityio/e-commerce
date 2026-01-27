@@ -1,5 +1,5 @@
-import { PaginatedResult } from "../../shared/interfaces/pagination";
-import { UserRole } from "../user/entities/User";
+import { PaginatedResult } from "@/shared/interfaces/pagination";
+import { UserRole } from "@/modules/user/entities/User";
 import { Order } from "./entities/Order";
 
 export interface CheckoutResult {
@@ -22,7 +22,7 @@ export interface IOrderService {
   getOrders(params?: OrderQueryParams): Promise<PaginatedResult<Order>>;
   getOrdersByUser(clerkId: string): Promise<Order[]>;
   getOrderById(
-    orderId: number,
+    publicId: string,
     clerkId: string,
     role: UserRole,
   ): Promise<Order | null>;

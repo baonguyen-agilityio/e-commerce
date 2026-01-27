@@ -6,7 +6,7 @@ export const createProductSchema = z.object({
   price: z.number().min(0, "Price must be a positive number"),
   stock: z.number().min(0, "Stock must be a positive number").optional(),
   imageUrl: z.string().url("Invalid URL format").optional(),
-  categoryId: z.number().int("Category ID must be an integer"),
+  categoryPublicId: z.string().min(1, "Category Public ID is required"),
   isActive: z.boolean().optional(),
 });
 
@@ -16,6 +16,6 @@ export const updateProductSchema = z.object({
   price: z.number().min(0, "Price must be a positive number").optional(),
   stock: z.number().min(0, "Stock must be a positive number").optional(),
   imageUrl: z.string().url("Invalid URL format").optional(),
-  categoryId: z.number().int("Category ID must be an integer").optional(),
+  categoryPublicId: z.string().min(1).optional(),
   isActive: z.boolean().optional(),
 });

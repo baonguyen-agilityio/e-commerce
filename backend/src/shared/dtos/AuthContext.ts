@@ -1,4 +1,4 @@
-import { UserRole } from '../../modules/user/entities/User';
+import { UserRole } from '@/modules/user/entities/User';
 import { Request } from 'express';
 
 export interface AuthContext {

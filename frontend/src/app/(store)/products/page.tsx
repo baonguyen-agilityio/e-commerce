@@ -19,11 +19,11 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SlidersHorizontal, Search, ChevronLeft, ChevronRight, Sprout } from "lucide-react";
 
-export default function ProductsPage() {
+function ProductsContent() {
   const searchParams = useSearchParams();
 
   const [search, setSearch] = useState(searchParams.get("search") || "");
-  const [selectedCategory, setSelectedCategory] = useState<number | undefined>();
+  const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
   const [inStock, setInStock] = useState<boolean | undefined>();
   const [sortBy, setSortBy] = useState("createdAt");
@@ -35,7 +35,7 @@ export default function ProductsPage() {
 
   const { data: productsData, isLoading } = useProducts({
     search: debouncedSearch || undefined,
-    categoryId: selectedCategory,
+    categoryPublicId: selectedCategory,
     isActive: true,
     inStock,
     minPrice: debouncedPriceRange[0] > 0 ? debouncedPriceRange[0] : undefined,
@@ -232,5 +232,37 @@ export default function ProductsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+import { Suspense } from "react";
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8 pl-4 border-l-4 border-primary/50">
+          <Skeleton className="h-10 w-64 bg-secondary/30" />
+          <Skeleton className="h-4 w-48 bg-secondary/30 mt-2" />
+        </div>
+        <div className="flex flex-col lg:flex-row gap-8">
+          <aside className="hidden lg:block w-64 flex-shrink-0">
+            <Skeleton className="h-[500px] w-full rounded-[2rem] bg-secondary/30" />
+          </aside>
+          <div className="flex-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="space-y-4">
+                  <Skeleton className="aspect-[4/5] rounded-[2rem] bg-secondary/30" />
+                  <Skeleton className="h-4 w-3/4 bg-secondary/30" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <ProductsContent />
+    </Suspense>
   );
 }

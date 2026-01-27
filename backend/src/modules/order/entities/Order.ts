@@ -6,9 +6,11 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  BeforeInsert,
 } from "typeorm";
+import { randomUUID } from "node:crypto";
 import { OrderItem } from "./OrderItem";
-import { User } from "../../user/entities/User";
+import { User } from "@/modules/user/entities/User";
 
 export enum OrderStatus {
   PENDING_PAYMENT = "PENDING_PAYMENT",
@@ -22,6 +24,10 @@ export enum OrderStatus {
 export class Order {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @Index({ unique: true })
+  @Column({ type: "varchar", unique: true })
+  publicId: string;
 
   @Index()
   @Column({ type: "int" })
@@ -50,4 +56,11 @@ export class Order {
 
   @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })
   items: OrderItem[];
+
+  @BeforeInsert()
+  generatePublicId() {
+    if (!this.publicId) {
+      this.publicId = randomUUID();
+    }
+  }
 }

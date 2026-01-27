@@ -62,8 +62,8 @@ class ApiClient {
     const searchParams = new URLSearchParams();
     if (params?.search) searchParams.set("search", params.search);
     if (params?.category) searchParams.set("category", params.category);
-    if (params?.categoryId)
-      searchParams.set("categoryId", params.categoryId.toString());
+    if (params?.categoryPublicId)
+      searchParams.set("categoryPublicId", params.categoryPublicId);
     if (params?.isActive !== undefined)
       searchParams.set("isActive", params.isActive.toString());
     if (params?.inStock !== undefined)
@@ -83,8 +83,8 @@ class ApiClient {
     );
   }
 
-  async getProduct(id: number): Promise<Product> {
-    return this.fetch<Product>(`/products/${id}`);
+  async getProduct(publicId: string): Promise<Product> {
+    return this.fetch<Product>(`/products/${publicId}`);
   }
 
   async createProduct(data: Partial<Product>): Promise<Product> {
@@ -94,15 +94,15 @@ class ApiClient {
     });
   }
 
-  async updateProduct(id: number, data: Partial<Product>): Promise<Product> {
-    return this.fetch<Product>(`/products/${id}`, {
+  async updateProduct(publicId: string, data: Partial<Product>): Promise<Product> {
+    return this.fetch<Product>(`/products/${publicId}`, {
       method: "PUT",
       body: JSON.stringify(data),
     });
   }
 
-  async deleteProduct(id: number): Promise<void> {
-    await this.fetch<void>(`/products/${id}`, { method: "DELETE" });
+  async deleteProduct(publicId: string): Promise<void> {
+    await this.fetch<void>(`/products/${publicId}`, { method: "DELETE" });
   }
 
   // Categories
@@ -116,8 +116,8 @@ class ApiClient {
     return result.data;
   }
 
-  async getCategory(id: number): Promise<Category> {
-    return this.fetch<Category>(`/categories/${id}`);
+  async getCategory(publicId: string): Promise<Category> {
+    return this.fetch<Category>(`/categories/${publicId}`);
   }
 
   async createCategory(data: Partial<Category>): Promise<Category> {
@@ -127,15 +127,15 @@ class ApiClient {
     });
   }
 
-  async updateCategory(id: number, data: Partial<Category>): Promise<Category> {
-    return this.fetch<Category>(`/categories/${id}`, {
+  async updateCategory(publicId: string, data: Partial<Category>): Promise<Category> {
+    return this.fetch<Category>(`/categories/${publicId}`, {
       method: "PUT",
       body: JSON.stringify(data),
     });
   }
 
-  async deleteCategory(id: number): Promise<void> {
-    await this.fetch<void>(`/categories/${id}`, { method: "DELETE" });
+  async deleteCategory(publicId: string): Promise<void> {
+    await this.fetch<void>(`/categories/${publicId}`, { method: "DELETE" });
   }
 
   // Cart
@@ -143,22 +143,22 @@ class ApiClient {
     return this.fetch<Cart>("/cart");
   }
 
-  async addToCart(productId: number, quantity: number = 1): Promise<Cart> {
+  async addToCart(publicId: string, quantity: number = 1): Promise<Cart> {
     return this.fetch<Cart>("/cart/items", {
       method: "POST",
-      body: JSON.stringify({ productId, quantity }),
+      body: JSON.stringify({ publicId, quantity }),
     });
   }
 
-  async updateCartItem(itemId: number, quantity: number): Promise<Cart> {
-    return this.fetch<Cart>(`/cart/items/${itemId}`, {
+  async updateCartItem(publicId: string, quantity: number): Promise<Cart> {
+    return this.fetch<Cart>(`/cart/items/${publicId}`, {
       method: "PUT",
       body: JSON.stringify({ quantity }),
     });
   }
 
-  async removeFromCart(itemId: number): Promise<Cart> {
-    return this.fetch<Cart>(`/cart/items/${itemId}`, { method: "DELETE" });
+  async removeFromCart(publicId: string): Promise<Cart> {
+    return this.fetch<Cart>(`/cart/items/${publicId}`, { method: "DELETE" });
   }
 
   async clearCart(): Promise<Cart> {
@@ -191,8 +191,8 @@ class ApiClient {
     return this.fetch<Order[]>(`/orders/me`);
   }
 
-  async getOrder(id: number): Promise<Order> {
-    return this.fetch<Order>(`/orders/${id}`);
+  async getOrder(publicId: string): Promise<Order> {
+    return this.fetch<Order>(`/orders/${publicId}`);
   }
 
   // Users

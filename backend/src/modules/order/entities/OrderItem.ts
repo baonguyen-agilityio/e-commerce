@@ -1,6 +1,6 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique } from "typeorm";
 import { Order } from "./Order";
-import { Product } from "../../product/entities/Product";
+import { Product } from "@/modules/product/entities/Product";
 
 @Entity('order_items')
 @Unique(['orderId', 'productId'])
@@ -20,11 +20,11 @@ export class OrderItem {
 
     @ManyToOne(() => Product, (product) => product.orderItems, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'productId' })
-    product: Product;   
+    product: Product;
 
     @Column({ type: 'int', default: 1 })
     quantity: number;
-    
+
     @Column({ type: 'decimal', precision: 10, scale: 2 })
     priceAtPurchase: number;
 }

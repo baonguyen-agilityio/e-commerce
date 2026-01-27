@@ -6,7 +6,7 @@ export const productSchema = z.object({
   price: z.number().positive("Price must be positive"),
   stock: z.number().int().min(0, "Stock cannot be negative"),
   imageUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
-  categoryId: z.number().positive("Category is required"),
+  categoryPublicId: z.string().min(1, "Category is required"),
   isActive: z.boolean().default(true),
 });
 

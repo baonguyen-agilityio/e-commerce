@@ -4,36 +4,38 @@ import {
   createMockRepository,
   createMockQueryBuilder,
   MockRepository,
-} from "../../../test/mocks/repository.mock";
+} from "@/test/mocks/repository.mock";
 import { Product } from "../entities/Product";
-import { NotFoundError } from "../../../shared/errors";
-import { createMockProduct } from "../../../test/factories/product.factory";
+import { NotFoundError } from "@/shared/errors";
+import { createMockProduct } from "@/test/factories/product.factory";
 
 describe("ProductService", () => {
   let productService: ProductService;
   let mockProductRepository: MockRepository<Product>;
 
-  const mockProduct = createMockProduct({ id: 1 });
+  const mockProduct = createMockProduct({ publicId: "prod-1" });
 
   beforeEach(() => {
     mockProductRepository = createMockRepository<Product>();
     productService = new ProductService(mockProductRepository as any);
   });
 
-  describe("getProductById", () => {
+  describe("getProductByPublicId", () => {
     it("should return product when found", async () => {
-      mockProductRepository.findOneBy.mockResolvedValue(mockProduct);
+      mockProductRepository.findOne.mockResolvedValue(mockProduct);
 
-      const result = await productService.getProductById(1);
+      const result = await productService.getProductByPublicId("prod-1");
 
       expect(result).toEqual(mockProduct);
-      expect(mockProductRepository.findOneBy).toHaveBeenCalledWith({ id: 1 });
+      expect(mockProductRepository.findOne).toHaveBeenCalledWith(expect.objectContaining({
+        where: { publicId: "prod-1" }
+      }));
     });
 
     it("should throw NotFoundError when product not found", async () => {
-      mockProductRepository.findOneBy.mockResolvedValue(null);
+      mockProductRepository.findOne.mockResolvedValue(null);
 
-      await expect(productService.getProductById(999)).rejects.toThrow(
+      await expect(productService.getProductByPublicId("missing-999")).rejects.toThrow(
         NotFoundError,
       );
     });
@@ -46,11 +48,11 @@ describe("ProductService", () => {
         description: "New Description",
         price: 49.99,
         stock: 5,
-        categoryId: 1,
+        categoryPublicId: "cat-1",
       };
 
-      mockProductRepository.create.mockReturnValue({ ...createDto, id: 2 });
-      mockProductRepository.save.mockResolvedValue({ ...createDto, id: 2 });
+      mockProductRepository.create.mockReturnValue({ ...createDto, publicId: "prod-2" });
+      mockProductRepository.save.mockResolvedValue({ ...createDto, publicId: "prod-2" });
 
       const result = await productService.createProduct(createDto);
 
@@ -64,7 +66,7 @@ describe("ProductService", () => {
         name: "New Product",
         description: "Desc",
         price: 10,
-        categoryId: 1,
+        categoryPublicId: "cat-1",
       };
 
       mockProductRepository.create.mockImplementation((data) => data);
@@ -83,35 +85,35 @@ describe("ProductService", () => {
   describe("updateProduct", () => {
     it("should update and return product", async () => {
       const updateDto = { name: "Updated Name" };
-      mockProductRepository.findOneBy.mockResolvedValue(mockProduct);
+      mockProductRepository.findOne.mockResolvedValue(mockProduct);
       mockProductRepository.save.mockResolvedValue({
         ...mockProduct,
         ...updateDto,
       });
 
-      const result = await productService.updateProduct(1, updateDto);
+      const result = await productService.updateProduct("prod-1", updateDto);
 
       expect(result?.name).toBe("Updated Name");
     });
 
     it("should throw NotFoundError when product not found", async () => {
-      mockProductRepository.findOneBy.mockResolvedValue(null);
+      mockProductRepository.findOne.mockResolvedValue(null);
 
       await expect(
-        productService.updateProduct(999, { name: "Test" }),
+        productService.updateProduct("missing-999", { name: "Test" }),
       ).rejects.toThrow(NotFoundError);
     });
   });
 
   describe("deleteProduct", () => {
     it("should delete product and return true", async () => {
-      mockProductRepository.findOneBy.mockResolvedValue(mockProduct);
-      mockProductRepository.delete.mockResolvedValue({ affected: 1 });
+      mockProductRepository.findOne.mockResolvedValue(mockProduct);
+      mockProductRepository.softRemove.mockResolvedValue(mockProduct);
 
-      const result = await productService.deleteProduct(1);
+      const result = await productService.deleteProduct("prod-1");
 
       expect(result).toBe(true);
-      expect(mockProductRepository.delete).toHaveBeenCalledWith(1);
+      expect(mockProductRepository.softRemove).toHaveBeenCalled();
     });
   });
 

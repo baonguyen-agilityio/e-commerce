@@ -26,9 +26,9 @@ import { formatCurrency } from "@/lib/utils";
 export default function ProductDetailPage() {
     const params = useParams();
     const router = useRouter();
-    const id = Number(params.id);
+    const publicId = params.publicId as string;
 
-    const { data: product, isLoading, error } = useProduct(id);
+    const { data: product, isLoading, error } = useProduct(publicId);
     const { data: categories } = useCategories();
     const updateProduct = useUpdateProduct();
 
@@ -36,7 +36,7 @@ export default function ProductDetailPage() {
 
     const handleUpdate = async (data: Partial<Product>) => {
         if (product) {
-            await updateProduct.mutateAsync({ id: product.id, data });
+            await updateProduct.mutateAsync({ publicId: product.publicId, data });
             setIsEditOpen(false);
         }
     };
@@ -151,7 +151,7 @@ export default function ProductDetailPage() {
                                         {product.name}
                                     </CardTitle>
                                     <CardDescription className="mt-2 text-muted-foreground font-mono">
-                                        ID: {product.id}
+                                        ID: {product.publicId}
                                     </CardDescription>
                                 </div>
                                 <Badge

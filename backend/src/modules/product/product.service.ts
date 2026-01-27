@@ -6,16 +6,16 @@ import {
   ProductQueryParams,
   UpdateProductDto,
 } from "./product.interface";
-import { NotFoundError } from "../../shared/errors";
-import { PaginatedResult } from "../../shared/interfaces/pagination";
-import { ErrorMessages } from "../../shared/errors/messages";
+import { NotFoundError } from "@/shared/errors";
+import { PaginatedResult } from "@/shared/interfaces/pagination";
+import { ErrorMessages } from "@/shared/errors/messages";
 
 export class ProductService implements IProductService {
-  constructor(private readonly productRepository: Repository<Product>) {}
+  constructor(private readonly productRepository: Repository<Product>) { }
 
-  private async findProductOrThrow(id: number): Promise<Product> {
+  private async findProductOrThrow(publicId: string): Promise<Product> {
     const product = await this.productRepository.findOne({
-      where: { id },
+      where: { publicId },
       relations: ["category"],
     });
     if (!product) {
@@ -30,7 +30,7 @@ export class ProductService implements IProductService {
     const {
       search,
       category,
-      categoryId,
+      categoryPublicId,
       isActive,
       inStock,
       minPrice,
@@ -57,8 +57,8 @@ export class ProductService implements IProductService {
       queryBuilder.andWhere("category.name = :category", { category });
     }
 
-    if (categoryId) {
-      queryBuilder.andWhere("product.categoryId = :categoryId", { categoryId });
+    if (categoryPublicId) {
+      queryBuilder.andWhere("category.publicId = :categoryPublicId", { categoryPublicId });
     }
 
     if (isActive !== undefined) {
@@ -94,36 +94,57 @@ export class ProductService implements IProductService {
     };
   }
 
-  async getProductById(id: number): Promise<Product> {
-    return await this.findProductOrThrow(id);
+  async getProductByPublicId(publicId: string): Promise<Product> {
+    return await this.findProductOrThrow(publicId);
   }
 
   async createProduct(data: CreateProductDto): Promise<Product> {
-    const { name, description, price, stock, imageUrl, categoryId, isActive } =
+    const { name, description, price, stock, imageUrl, categoryPublicId, isActive } =
       data;
+
+    const category = await this.productRepository.manager.findOne("Category" as any, {
+      where: { publicId: categoryPublicId }
+    });
+
+    if (!category) {
+      throw new NotFoundError(ErrorMessages.CATEGORY_NOT_FOUND || "Category not found");
+    }
+
     const product = this.productRepository.create({
       name,
       description,
       price,
       stock: stock || 0,
       imageUrl,
-      categoryId,
+      category: category as any,
       isActive: isActive !== false,
     });
     return await this.productRepository.save(product);
   }
 
   async updateProduct(
-    id: number,
+    publicId: string,
     data: UpdateProductDto,
   ): Promise<Product | null> {
-    const product = await this.findProductOrThrow(id);
+    const product = await this.findProductOrThrow(publicId);
+
+    if (data.categoryPublicId) {
+      const category = await this.productRepository.manager.findOne("Category" as any, {
+        where: { publicId: data.categoryPublicId }
+      });
+      if (!category) {
+        throw new NotFoundError(ErrorMessages.CATEGORY_NOT_FOUND || "Category not found");
+      }
+      product.category = category as any;
+      delete data.categoryPublicId;
+    }
+
     Object.assign(product, data);
     return this.productRepository.save(product);
   }
 
-  async deleteProduct(id: number): Promise<boolean> {
-    const product = await this.findProductOrThrow(id);
+  async deleteProduct(publicId: string): Promise<boolean> {
+    const product = await this.findProductOrThrow(publicId);
     await this.productRepository.softRemove(product);
     return true;
   }

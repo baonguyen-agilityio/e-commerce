@@ -1,4 +1,4 @@
-import { PaginatedResult } from "../../shared/interfaces/pagination";
+import { PaginatedResult } from "@/shared/interfaces/pagination";
 import { Product } from "./entities/Product";
 
 export interface CreateProductDto {
@@ -7,7 +7,7 @@ export interface CreateProductDto {
   price: number;
   stock?: number;
   imageUrl?: string;
-  categoryId: number;
+  categoryPublicId: string;
   isActive?: boolean;
 }
 
@@ -17,7 +17,7 @@ export interface UpdateProductDto {
   price?: number;
   stock?: number;
   imageUrl?: string;
-  categoryId?: number;
+  categoryPublicId?: string;
   isActive?: boolean;
 }
 
@@ -26,7 +26,7 @@ export interface ProductQueryParams {
   limit?: number;
   search?: string;
   category?: string;
-  categoryId?: number;
+  categoryPublicId?: string;
   isActive?: boolean;
   inStock?: boolean;
   minPrice?: number;
@@ -36,8 +36,8 @@ export interface ProductQueryParams {
 }
 export interface IProductService {
   getAllProducts(params?: ProductQueryParams): Promise<PaginatedResult<Product>>;
-  getProductById(id: number): Promise<Product | null>;
+  getProductByPublicId(publicId: string): Promise<Product | null>;
   createProduct(data: CreateProductDto): Promise<any>;
-  updateProduct(id: number, data: UpdateProductDto): Promise<Product | null>;
-  deleteProduct(id: number): Promise<boolean>;
+  updateProduct(publicId: string, data: UpdateProductDto): Promise<Product | null>;
+  deleteProduct(publicId: string): Promise<boolean>;
 }

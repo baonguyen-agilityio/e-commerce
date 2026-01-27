@@ -12,9 +12,9 @@ import {
   AfterRecover,
 } from "typeorm";
 import { clerkClient } from "@clerk/express";
-import { InternalError } from "../../../shared/errors";
-import { Cart } from "../../cart/entities/Cart";
-import { Order } from "../../order/entities/Order";
+import { InternalError } from "@/shared/errors";
+import { Cart } from "@/modules/cart/entities/Cart";
+import { Order } from "@/modules/order/entities/Order";
 
 export enum UserRole {
   CUSTOMER = "customer",

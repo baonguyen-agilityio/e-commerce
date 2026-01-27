@@ -16,8 +16,8 @@ import { X, Filter } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
 interface ProductFiltersProps {
-  selectedCategory?: number;
-  onCategoryChange: (categoryId: number | undefined) => void;
+  selectedCategory?: string;
+  onCategoryChange: (categoryPublicId: string | undefined) => void;
   priceRange: [number, number];
   onPriceRangeChange: (range: [number, number]) => void;
   inStock: boolean | undefined;
@@ -78,17 +78,17 @@ export function ProductFilters({
             ) : (
               <div className="space-y-3 pt-2">
                 {categories?.map((category) => (
-                  <div key={category.id} className="flex items-center gap-2 group">
+                  <div key={category.publicId} className="flex items-center gap-2 group">
                     <Checkbox
-                      id={`category-${category.id}`}
-                      checked={selectedCategory === category.id}
+                      id={`category-${category.publicId}`}
+                      checked={selectedCategory === category.publicId}
                       onCheckedChange={(checked) =>
-                        onCategoryChange(checked ? category.id : undefined)
+                        onCategoryChange(checked ? category.publicId : undefined)
                       }
                       className="cursor-pointer border-muted-foreground/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                     />
                     <Label
-                      htmlFor={`category-${category.id}`}
+                      htmlFor={`category-${category.publicId}`}
                       className="text-sm cursor-pointer flex-1 text-muted-foreground group-hover:text-foreground transition-colors"
                     >
                       {category.name}

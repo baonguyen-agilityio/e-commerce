@@ -6,16 +6,17 @@ import { Cart } from "../modules/cart/entities/Cart";
 import { CartItem } from "../modules/cart/entities/CartItem";
 import { Order } from "../modules/order/entities/Order";
 import { OrderItem } from "../modules/order/entities/OrderItem";
+import { env } from "./environment";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
-  host: process.env.DB_HOST || "localhost",
-  port: parseInt(process.env.DB_PORT || "5432"),
-  username: process.env.DB_USERNAME || "postgres",
-  password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "e_commerce",
-  synchronize: process.env.NODE_ENV !== "production",
-  logging: process.env.NODE_ENV === "development",
+  host: env.DB_HOST,
+  port: env.DB_PORT,
+  username: env.DB_USERNAME,
+  password: env.DB_PASSWORD,
+  database: env.DB_NAME,
+  synchronize: env.NODE_ENV !== "production",
+  logging: env.NODE_ENV === "development",
   entities: [User, Product, Category, Cart, CartItem, Order, OrderItem],
   migrations: ["src/migrations/*.ts"],
 });

@@ -17,8 +17,8 @@ import { formatCurrency } from "@/lib/utils";
 
 export default function ProductDetailPage() {
   const params = useParams();
-  const productId = Number(params.id);
-  const { data: product, isLoading, error } = useProduct(productId);
+  const publicId = params.publicId as string;
+  const { data: product, isLoading, error } = useProduct(publicId);
   const { isSignedIn } = useAuth();
   const addToCart = useAddToCart();
   const [quantity, setQuantity] = useState(1);
@@ -28,7 +28,7 @@ export default function ProductDetailPage() {
       toast.error("Please sign in to add items to cart");
       return;
     }
-    addToCart.mutate({ productId, quantity });
+    addToCart.mutate({ publicId, quantity });
   };
 
   if (isLoading) {

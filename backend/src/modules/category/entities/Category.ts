@@ -6,13 +6,19 @@ import {
   Index,
   OneToMany,
   PrimaryGeneratedColumn,
+  BeforeInsert,
 } from "typeorm";
-import { Product } from "../../product/entities/Product";
+import { randomUUID } from "node:crypto";
+import { Product } from "@/modules/product/entities/Product";
 
 @Entity("categories")
 export class Category {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @Index({ unique: true })
+  @Column({ type: "varchar", unique: true })
+  publicId: string;
 
   @Index()
   @Column({ type: "varchar" })
@@ -29,4 +35,11 @@ export class Category {
 
   @OneToMany(() => Product, (product) => product.category)
   products: Product[];
+
+  @BeforeInsert()
+  generatePublicId() {
+    if (!this.publicId) {
+      this.publicId = randomUUID();
+    }
+  }
 }

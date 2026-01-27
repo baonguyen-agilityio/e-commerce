@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { UserController } from "./user.controller";
-import { requireAuth } from "../../shared/middleware/requireAuth";
+import { requireAuth } from "@/shared/middleware/requireAuth";
 import { UserRole } from "./entities/User";
-import { validate } from "../../shared/middleware/validate";
+import { validate } from "@/shared/middleware/validate";
 import { changeRoleSchema } from "./user.validation";
 
 export function createUserRoutes(controller: UserController): Router {

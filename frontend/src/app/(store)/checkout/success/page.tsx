@@ -12,11 +12,11 @@ import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
 
-export default function OrderSuccessPage() {
+function OrderSuccessContent() {
     const searchParams = useSearchParams();
-    const orderId = Number(searchParams.get("orderId"));
+    const publicId = searchParams.get("orderId") as string;
 
-    const { data: order, isLoading, error } = useOrder(orderId);
+    const { data: order, isLoading, error } = useOrder(publicId);
 
     // Optimistic loading: Show loading if loading OR if data is undefined and no error
     const showLoading = isLoading || (order === undefined && !error);
@@ -92,7 +92,7 @@ export default function OrderSuccessPage() {
                                 </CardTitle>
                                 <div className="text-right">
                                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Order ID</p>
-                                    <p className="font-mono text-sm font-bold bg-background px-3 py-1 rounded-lg border border-border">#{order.id}</p>
+                                    <p className="font-mono text-sm font-bold bg-background px-3 py-1 rounded-lg border border-border">#{order.publicId}</p>
                                 </div>
                             </div>
                         </CardHeader>
@@ -188,5 +188,33 @@ export default function OrderSuccessPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+import { Suspense } from "react";
+
+export default function OrderSuccessPage() {
+    return (
+        <Suspense fallback={
+            <div className="container mx-auto px-4 py-16 space-y-8 max-w-4xl">
+                <div className="flex flex-col items-center space-y-4">
+                    <Skeleton className="h-20 w-20 rounded-full bg-secondary/30" />
+                    <Skeleton className="h-10 w-64 bg-secondary/30" />
+                    <Skeleton className="h-4 w-48 bg-secondary/30" />
+                </div>
+                <Card className="border-border/50 bg-card rounded-[2rem] overflow-hidden">
+                    <CardHeader>
+                        <Skeleton className="h-8 w-48 bg-secondary/30" />
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {[1, 2, 3].map((i) => (
+                            <Skeleton key={i} className="h-20 w-full rounded-xl bg-secondary/30" />
+                        ))}
+                    </CardContent>
+                </Card>
+            </div>
+        }>
+            <OrderSuccessContent />
+        </Suspense>
     );
 }

@@ -24,8 +24,8 @@ export function useAddToCart() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ productId, quantity }: { productId: number; quantity?: number }) =>
-      api.addToCart(productId, quantity),
+    mutationFn: ({ publicId, quantity }: { publicId: string; quantity?: number }) =>
+      api.addToCart(publicId, quantity),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       toast.success("Added to cart");
@@ -40,8 +40,8 @@ export function useUpdateCartItem() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ itemId, quantity }: { itemId: number; quantity: number }) =>
-      api.updateCartItem(itemId, quantity),
+    mutationFn: ({ publicId, quantity }: { publicId: string; quantity: number }) =>
+      api.updateCartItem(publicId, quantity),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
@@ -55,7 +55,7 @@ export function useRemoveFromCart() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (itemId: number) => api.removeFromCart(itemId),
+    mutationFn: (publicId: string) => api.removeFromCart(publicId),
     onSuccess: (updatedCart) => {
       // Update cache with returned cart data instead of refetching
       queryClient.setQueryData(["cart"], updatedCart);

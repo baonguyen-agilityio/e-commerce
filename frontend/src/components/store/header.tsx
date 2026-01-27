@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/hooks/use-cart";
 import { CartSheet } from "./cart-sheet";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCurrentUser } from "@/hooks/use-user";
 
@@ -38,7 +38,12 @@ export function Header() {
   const { data: cart } = useCart();
   const [searchQuery, setSearchQuery] = useState("");
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const cartItemCount =
     cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0;
@@ -75,7 +80,7 @@ export function Header() {
           >
             Collections
           </Link>
-          {isSignedIn && (
+          {isMounted && isSignedIn && (
             <>
               <Link
                 href={"/orders"}
@@ -150,22 +155,26 @@ export function Header() {
           </Sheet>
 
           {/* User Auth */}
-          {isSignedIn && !isUserLoading && !!user ? (
-            <UserButton
-              afterSignOutUrl="/"
-              appearance={{
-                elements: {
-                  avatarBox:
-                    "h-10 w-10 ring-2 ring-background hover:ring-primary/50 transition-all",
-                },
-              }}
-            />
+          {isMounted ? (
+            isSignedIn && !isUserLoading && !!user ? (
+              <UserButton
+                afterSignOutUrl="/"
+                appearance={{
+                  elements: {
+                    avatarBox:
+                      "h-10 w-10 ring-2 ring-background hover:ring-primary/50 transition-all",
+                  },
+                }}
+              />
+            ) : (
+              <SignInButton mode="modal">
+                <Button className="cursor-pointer bg-primary hover:bg-primary/90 text-primary-foreground rounded-full h-11 px-6 font-medium shadow-sm transition-all duration-300 hover:shadow-md">
+                  Sign In
+                </Button>
+              </SignInButton>
+            )
           ) : (
-            <SignInButton mode="modal">
-              <Button className="cursor-pointer bg-primary hover:bg-primary/90 text-primary-foreground rounded-full h-11 px-6 font-medium shadow-sm transition-all duration-300 hover:shadow-md">
-                Sign In
-              </Button>
-            </SignInButton>
+            <div className="h-11 w-24 bg-secondary/20 rounded-full animate-pulse" />
           )}
 
           {/* Mobile Menu */}
@@ -206,7 +215,7 @@ export function Header() {
                     </div>
                     <span className="font-medium">All Products</span>
                   </Link>
-                  {isSignedIn && (
+                  {isMounted && isSignedIn && (
                     <>
                       <Link
                         href="/orders"

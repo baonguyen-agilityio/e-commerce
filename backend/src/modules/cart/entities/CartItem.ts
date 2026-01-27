@@ -1,12 +1,26 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique } from "typeorm";
+import {
+    Column,
+    Entity,
+    JoinColumn,
+    ManyToOne,
+    PrimaryGeneratedColumn,
+    Unique,
+    Index,
+    BeforeInsert,
+} from "typeorm";
+import { randomUUID } from "node:crypto";
 import { Cart } from "./Cart";
-import { Product } from "../../product/entities/Product";
+import { Product } from "@/modules/product/entities/Product";
 
 @Entity('cart_items')
 @Unique(['cartId', 'productId'])
 export class CartItem {
     @PrimaryGeneratedColumn()
     id: number;
+
+    @Index({ unique: true })
+    @Column({ type: "varchar", unique: true })
+    publicId: string;
 
     @Column({ type: 'int' })
     cartId: number;
@@ -24,4 +38,11 @@ export class CartItem {
 
     @Column({ type: 'int', default: 1 })
     quantity: number;
+
+    @BeforeInsert()
+    generatePublicId() {
+        if (!this.publicId) {
+            this.publicId = randomUUID();
+        }
+    }
 }

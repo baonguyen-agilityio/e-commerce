@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import {
   hasPermission,
   UserRole,
-} from "../../modules/user/entities/User";
+} from "@/modules/user/entities/User";
 import { getAuth } from "@clerk/express";
 import { UnauthorizedError, ForbiddenError } from "../errors";
 

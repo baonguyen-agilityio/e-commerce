@@ -12,12 +12,12 @@ import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { ORDER_STATUS_CONFIG } from "@/lib/constants";
 import { use } from "react";
 
-export default function OrderDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+export default function OrderDetailsPage({ params }: { params: Promise<{ publicId: string }> }) {
     // Ungalvanize params using use() for Next.js 15+ compatibility
     const resolvedParams = use(params);
-    const orderId = parseInt(resolvedParams.id);
+    const publicId = resolvedParams.publicId;
 
-    const { data: order, isLoading, error } = useOrder(orderId);
+    const { data: order, isLoading, error } = useOrder(publicId);
 
     // Optimistic loading logic
     const showLoading = isLoading || (order === undefined && !error);
@@ -57,7 +57,7 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
                     <ShoppingBag className="h-12 w-12 text-muted-foreground/50" />
                 </div>
                 <h2 className="text-3xl font-heading font-black text-foreground mb-4">Order not found</h2>
-                <p className="text-muted-foreground mb-8">We couldn't retrieve the details for order #{orderId}.</p>
+                <p className="text-muted-foreground mb-8">We couldn't retrieve the details for order #{publicId}.</p>
                 <Link href="/orders">
                     <Button className="rounded-xl bg-primary hover:bg-primary/90 h-12 px-8 font-bold">
                         <ArrowLeft className="mr-2 h-4 w-4" />
@@ -80,7 +80,7 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
                     </Link>
                     <div>
                         <h1 className="text-3xl font-heading font-black text-foreground tracking-tight">
-                            Order #{order.id}
+                            Order #{order.publicId}
                         </h1>
                         <div className="flex items-center gap-3 mt-1 text-muted-foreground font-medium">
                             <Calendar className="h-4 w-4" />

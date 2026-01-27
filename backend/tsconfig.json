@@ -2,7 +2,9 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "commonjs",
-    "lib": ["ES2022"],
+    "lib": [
+      "ES2022"
+    ],
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
@@ -15,8 +17,40 @@
     "sourceMap": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "strictPropertyInitialization": false
+    "strictPropertyInitialization": false,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "src/*"
+      ],
+      "@modules/*": [
+        "src/modules/*"
+      ],
+      "@shared/*": [
+        "src/shared/*"
+      ],
+      "@config/*": [
+        "src/config/*"
+      ],
+      "@test/*": [
+        "src/test/*"
+      ],
+      "@interfaces/*": [
+        "src/interfaces/*"
+      ]
+    }
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
+  "ts-node": {
+    "require": [
+      "tsconfig-paths/register"
+    ],
+    "transpileOnly": true
+  }
 }

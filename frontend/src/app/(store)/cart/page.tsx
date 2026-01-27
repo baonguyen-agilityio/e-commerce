@@ -36,11 +36,11 @@ export default function CartPage() {
       0
     ) || 0;
 
-  const handleQuantityChange = (itemId: number, newQuantity: number) => {
+  const handleQuantityChange = (publicId: string, newQuantity: number) => {
     if (newQuantity < 1) {
-      removeFromCart.mutate(itemId);
+      removeFromCart.mutate(publicId);
     } else {
-      updateCartItem.mutate({ itemId, quantity: newQuantity });
+      updateCartItem.mutate({ publicId, quantity: newQuantity });
     }
   };
 
@@ -48,7 +48,7 @@ export default function CartPage() {
     try {
       const response = await checkout.mutateAsync(paymentMethodId);
       setIsCheckoutOpen(false);
-      router.push(`/checkout/success?orderId=${response.order.id}`);
+      router.push(`/checkout/success?orderId=${response.order.publicId}`);
     } catch (error) {
       // Error handled in hook
     }
@@ -147,7 +147,7 @@ export default function CartPage() {
                 <div>
                   <div className="flex justify-between items-start mb-2">
                     <Link
-                      href={`/products/${item.product.id}`}
+                      href={`/products/${item.product.publicId}`}
                       className="font-heading text-xl font-bold text-foreground hover:text-primary transition-colors cursor-pointer line-clamp-1"
                     >
                       {item.product.name}
@@ -169,7 +169,7 @@ export default function CartPage() {
                       size="icon"
                       className="h-9 w-9 cursor-pointer rounded-lg hover:bg-background hover:shadow-sm"
                       onClick={() =>
-                        handleQuantityChange(item.id, item.quantity - 1)
+                        handleQuantityChange(item.publicId, item.quantity - 1)
                       }
                       disabled={updateCartItem.isPending}
                     >
@@ -183,7 +183,7 @@ export default function CartPage() {
                       size="icon"
                       className="h-9 w-9 cursor-pointer rounded-lg hover:bg-background hover:shadow-sm"
                       onClick={() =>
-                        handleQuantityChange(item.id, item.quantity + 1)
+                        handleQuantityChange(item.publicId, item.quantity + 1)
                       }
                       disabled={updateCartItem.isPending}
                     >
@@ -196,7 +196,7 @@ export default function CartPage() {
                     variant="ghost"
                     size="sm"
                     className="text-muted-foreground hover:text-red-500 hover:bg-red-50 cursor-pointer rounded-xl px-4 h-11 transition-all"
-                    onClick={() => removeFromCart.mutate(item.id)}
+                    onClick={() => removeFromCart.mutate(item.publicId)}
                     disabled={removeFromCart.isPending}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />

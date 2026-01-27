@@ -25,7 +25,7 @@ interface ProductFormProps {
     price: number;
     stock: number;
     imageUrl?: string;
-    categoryId: number;
+    categoryPublicId: string;
     isActive: boolean;
   }) => void;
   isSubmitting?: boolean;
@@ -42,7 +42,7 @@ export function ProductForm({
   const [price, setPrice] = useState(Number(product?.price) || 0);
   const [stock, setStock] = useState(Number(product?.stock) || 0);
   const [imageUrl, setImageUrl] = useState(product?.imageUrl || "");
-  const [categoryId, setCategoryId] = useState(Number(product?.categoryId) || 0);
+  const [categoryPublicId, setCategoryPublicId] = useState(product?.categoryPublicId || "");
   const [isActive, setIsActive] = useState(product?.isActive ?? true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -51,7 +51,7 @@ export function ProductForm({
     if (!name.trim()) newErrors.name = "Name is required";
     if (price <= 0) newErrors.price = "Price must be positive";
     if (stock < 0) newErrors.stock = "Stock cannot be negative";
-    if (!categoryId) newErrors.categoryId = "Category is required";
+    if (!categoryPublicId) newErrors.categoryId = "Category is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -65,7 +65,7 @@ export function ProductForm({
         price: Number(price),
         stock: Number(stock),
         imageUrl: imageUrl || undefined,
-        categoryId: Number(categoryId),
+        categoryPublicId,
         isActive,
       });
     }
@@ -146,8 +146,8 @@ export function ProductForm({
           Category
         </Label>
         <Select
-          value={categoryId ? String(categoryId) : undefined}
-          onValueChange={(value) => setCategoryId(Number(value))}
+          value={categoryPublicId || undefined}
+          onValueChange={(value) => setCategoryPublicId(value)}
         >
           <SelectTrigger className="cursor-pointer bg-secondary/20 border-border focus:bg-background focus:border-primary focus:ring-primary/20 rounded-xl">
             <SelectValue placeholder="Select a category" />
@@ -155,8 +155,8 @@ export function ProductForm({
           <SelectContent className="rounded-xl border-border bg-card">
             {categories?.map((category) => (
               <SelectItem
-                key={category.id}
-                value={String(category.id)}
+                key={category.publicId}
+                value={category.publicId}
                 className="cursor-pointer focus:bg-secondary focus:text-foreground rounded-lg"
               >
                 {category.name}

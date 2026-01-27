@@ -1,50 +1,49 @@
 import { Response, Request } from "express";
-import { asyncHandler } from "../../shared/middleware/asyncHandler";
 import { ICartService } from "./cart.interface";
-import { getAuthContext } from "../../shared/dtos/AuthContext";
+import { getAuthContext } from "@shared/dtos/AuthContext";
 
 export class CartController {
   constructor(private readonly cartService: ICartService) { }
 
-  getCart = asyncHandler(async (req: Request, res: Response) => {
+  getCart = async (req: Request, res: Response) => {
     const authContext = getAuthContext(req);
     const cart = await this.cartService.getCartByClerkId(authContext.userId);
     res.status(200).json(cart);
-  });
+  };
 
-  addItemToCart = asyncHandler(async (req: Request, res: Response) => {
+  addItemToCart = async (req: Request, res: Response) => {
     const authContext = getAuthContext(req);
-    const { productId, quantity } = req.body;
+    const { publicId, quantity } = req.body;
     const cartItem = await this.cartService.addItemToCart(
       authContext.userId,
-      productId,
+      publicId,
       quantity,
     );
     res.status(201).json(cartItem);
-  });
+  };
 
-  updateItemQuantity = asyncHandler(async (req: Request, res: Response) => {
+  updateItemQuantity = async (req: Request, res: Response) => {
     const authContext = getAuthContext(req);
-    const cartItemId = parseInt(req.params.id, 10);
+    const publicId = req.params.publicId;
     const { quantity } = req.body;
     const cartItem = await this.cartService.updateItemQuantity(
       authContext.userId,
-      cartItemId,
+      publicId,
       quantity,
     );
     res.status(200).json(cartItem);
-  });
+  };
 
-  removeItemFromCart = asyncHandler(async (req: Request, res: Response) => {
+  removeItemFromCart = async (req: Request, res: Response) => {
     const authContext = getAuthContext(req);
-    const cartItemId = parseInt(req.params.id, 10);
-    const cart = await this.cartService.removeItemFromCart(authContext.userId, cartItemId);
+    const publicId = req.params.publicId;
+    const cart = await this.cartService.removeItemFromCart(authContext.userId, publicId);
     res.status(200).json(cart);
-  });
+  };
 
-  clearCart = asyncHandler(async (req: Request, res: Response) => {
+  clearCart = async (req: Request, res: Response) => {
     const authContext = getAuthContext(req);
     const cart = await this.cartService.clearCart(authContext.userId);
     res.status(200).json(cart);
-  });
+  };
 }

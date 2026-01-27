@@ -69,7 +69,7 @@ export default function AdminOrdersPage() {
 
   const columns: ColumnDef<Order>[] = [
     {
-      accessorFn: (row) => String(row.id),
+      accessorFn: (row) => String(row.publicId),
       id: "id",
       header: "Order",
       cell: ({ row }) => (
@@ -78,7 +78,7 @@ export default function AdminOrdersPage() {
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </div>
           <span className="font-mono font-bold text-foreground">
-            #{row.original.id}
+            #{row.original.publicId}
           </span>
         </div>
       ),
@@ -246,7 +246,7 @@ export default function AdminOrdersPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-foreground font-heading text-2xl">
               <ShoppingCart className="h-6 w-6 text-primary" />
-              Order #{viewingOrder?.id}
+              Order #{viewingOrder?.publicId}
             </DialogTitle>
             <DialogDescription className="text-muted-foreground font-medium">
               Placed on{" "}

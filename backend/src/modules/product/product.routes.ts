@@ -1,15 +1,15 @@
 import { Router } from "express";
 import { ProductController } from "./product.controller";
-import { validate } from "../../shared/middleware/validate";
+import { validate } from "@/shared/middleware/validate";
 import { createProductSchema, updateProductSchema } from "./product.validation";
-import { requireAuth } from "../../shared/middleware/requireAuth";
-import { UserRole } from "../user/entities/User";
+import { requireAuth } from "@/shared/middleware/requireAuth";
+import { UserRole } from "@/modules/user/entities/User";
 
 export function createProductRoutes(controller: ProductController): Router {
   const router = Router();
   // public routes
   router.get("/", controller.getAllProducts);
-  router.get("/:id", controller.getProductById);
+  router.get("/:publicId", controller.getProductByPublicId);
 
   // admin routes
   router.post(
@@ -19,13 +19,13 @@ export function createProductRoutes(controller: ProductController): Router {
     controller.createProduct,
   );
   router.put(
-    "/:id",
+    "/:publicId",
     requireAuth(UserRole.STAFF),
     validate(updateProductSchema),
     controller.updateProduct,
   );
   router.delete(
-    "/:id",
+    "/:publicId",
     requireAuth(UserRole.STAFF),
     controller.deleteProduct,
   );

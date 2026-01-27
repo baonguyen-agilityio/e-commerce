@@ -1,19 +1,19 @@
-import { UserService, UserController } from "./modules/user";
-import { ProductController, ProductService } from "./modules/product";
-import { CategoryService, CategoryController } from "./modules/category";
-import { CartService, CartController } from "./modules/cart";
-import { OrderService, OrderController } from "./modules/order";
+import { UserService, UserController } from "@modules/user";
+import { ProductController, ProductService } from "@modules/product";
+import { CategoryService, CategoryController } from "@modules/category";
+import { CartService, CartController } from "@modules/cart";
+import { OrderService, OrderController } from "@modules/order";
 import { DataSource } from "typeorm";
-import { User } from "./modules/user/entities/User";
-import { Product } from "./modules/product/entities/Product";
-import { Category } from "./modules/category/entities/Category";
-import { Cart } from "./modules/cart/entities/Cart";
-import { CartItem } from "./modules/cart/entities/CartItem";
-import { Order } from "./modules/order/entities/Order";
-import { IEmailService } from "./shared/interfaces/IEmailService";
-import { ResendEmailService } from "./shared/services/email/ResendEmailService";
-import { StripePaymentGateway } from "./shared/services/payment/StripePaymentGateway";
-import { env } from "./config/environment";
+import { User } from "@modules/user/entities/User";
+import { Product } from "@modules/product/entities/Product";
+import { Category } from "@modules/category/entities/Category";
+import { Cart } from "@modules/cart/entities/Cart";
+import { CartItem } from "@modules/cart/entities/CartItem";
+import { Order } from "@modules/order/entities/Order";
+import { IEmailService } from "@shared/interfaces/IEmailService";
+import { ResendEmailService } from "@shared/services/email/ResendEmailService";
+import { StripePaymentGateway } from "@shared/services/payment/StripePaymentGateway";
+import { env } from "@config/environment";
 
 export interface Container {
   userController: UserController;
@@ -41,7 +41,6 @@ export function createContainer(dataSource: DataSource): Container {
     cartRepository,
     cartItemRepository,
     productRepository,
-    userRepository,
   );
   const cartController = new CartController(cartService);
 

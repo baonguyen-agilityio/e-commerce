@@ -1,10 +1,9 @@
-import { Request, Response } from "express";
 import { Router } from "express";
-import { requireAuth } from "../../shared/middleware/requireAuth";
-import { UserRole } from "../user/entities/User";
+import { requireAuth } from "@/shared/middleware/requireAuth";
+import { UserRole } from "@/modules/user/entities/User";
 import { OrderController } from "./order.controller";
 
-import { checkoutLimiter } from "../../shared/middleware/rateLimiter";
+import { checkoutLimiter } from "@/shared/middleware/rateLimiter";
 
 export function createOrderRoutes(controller: OrderController): Router {
   const router = Router();

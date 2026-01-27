@@ -1,5 +1,5 @@
-import { Order } from "../../modules/order/entities/Order";
-import { User } from "../../modules/user/entities/User";
+import { Order } from "@/modules/order/entities/Order";
+import { User } from "@/modules/user/entities/User";
 
 export interface OrderEmailData {
     order: Order;
