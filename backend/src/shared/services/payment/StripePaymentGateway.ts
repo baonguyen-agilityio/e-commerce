@@ -17,7 +17,7 @@ export class StripePaymentGateway implements IPaymentGateway {
         amount: Math.round(paymentDetails.amount * 100),
         currency: paymentDetails.currency,
         description: paymentDetails.description,
-        payment_method: paymentDetails.paymentMethodId || "pm_card_visa",
+        payment_method: paymentDetails.paymentMethodId,
         automatic_payment_methods: {
           enabled: true,
           allow_redirects: "never",

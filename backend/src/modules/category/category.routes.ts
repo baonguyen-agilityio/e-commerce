@@ -4,6 +4,7 @@ import { CategoryController } from "./category.controller";
 import {
   createCategorySchema,
   updateCategorySchema,
+  categoryQuerySchema,
 } from "./category.validation";
 import { requireAuth } from "@/shared/middleware/requireAuth";
 import { UserRole } from "@/modules/user/entities/User";
@@ -11,7 +12,7 @@ import { UserRole } from "@/modules/user/entities/User";
 export function createCategoryRoutes(controller: CategoryController): Router {
   const router = Router();
   // public routes
-  router.get("/", controller.getAllCategories);
+  router.get("/", validate(categoryQuerySchema, "query"), controller.getAllCategories);
   router.get("/:id", controller.getCategoryById);
 
   // admin routes

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   useCategories,
@@ -40,9 +40,39 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, MoreHorizontal, Pencil, Trash2, Sprout, Hash, Leaf } from "lucide-react";
+import { keepPreviousData } from "@tanstack/react-query";
 
 export default function AdminCategoriesPage() {
-  const { data: categories, isLoading } = useCategories();
+  // Pagination State
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const handleSearch = useCallback((value: string) => {
+    setSearchTerm(value);
+    setPagination((prev) => {
+      if (prev.pageIndex === 0) return prev;
+      return { ...prev, pageIndex: 0 };
+    });
+  }, []);
+
+  // Categories query (paginated, for the table)
+  const { data: categoriesResult, isLoading: isTableLoading } = useCategories(
+    {
+      page: pagination.pageIndex + 1,
+      limit: pagination.pageSize,
+      search: searchTerm || undefined,
+    },
+    { placeholderData: keepPreviousData }
+  );
+
+  // Stats query
+  const { data: allCategoriesResult, isLoading: isStatsLoading } = useCategories({
+    limit: 999,
+  });
+
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
   const deleteCategory = useDeleteCategory();
@@ -50,6 +80,10 @@ export default function AdminCategoriesPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
+
+  const categories = categoriesResult?.data || [];
+  const pageCount = categoriesResult?.totalPages || 0;
+  const totalCategoriesCount = allCategoriesResult?.total || 0;
 
   const handleCreate = async (data: { name: string; description?: string }) => {
     await createCategory.mutateAsync(data);
@@ -142,7 +176,7 @@ export default function AdminCategoriesPage() {
     },
   ];
 
-  if (isLoading) {
+  if (isTableLoading && !categoriesResult) {
     return (
       <div className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2">
@@ -161,14 +195,14 @@ export default function AdminCategoriesPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <StatsCard
           title="Total Collections"
-          value={categories?.length || 0}
+          value={isStatsLoading ? "..." : totalCategoriesCount}
           icon={Sprout}
           description="Categories defined"
           iconClassName="bg-primary/10 text-primary"
         />
         <StatsCard
           title="Active Collections"
-          value={categories?.length || 0}
+          value={isStatsLoading ? "..." : totalCategoriesCount}
           icon={Leaf}
           description="Visible to customers"
           iconClassName="bg-secondary/30 text-foreground"
@@ -178,7 +212,11 @@ export default function AdminCategoriesPage() {
       {/* Data Table */}
       <DataTable
         columns={columns}
-        data={categories || []}
+        data={categories}
+        pageCount={pageCount}
+        pagination={pagination}
+        onPaginationChange={setPagination}
+        onSearch={handleSearch}
         searchKey="name"
         searchPlaceholder="Search categories..."
         actionElement={

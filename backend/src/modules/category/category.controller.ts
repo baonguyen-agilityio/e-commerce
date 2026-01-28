@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
-import { ICategoryService } from "./category.interface";
+import { CategoryQueryParams, ICategoryService } from "./category.interface";
 
 export class CategoryController {
   constructor(private readonly categoryService: ICategoryService) { }
 
   getAllCategories = async (req: Request, res: Response): Promise<void> => {
-    const categories = await this.categoryService.getAllCategories();
+    const categories = await this.categoryService.getAllCategories(req.query as unknown as CategoryQueryParams);
     res.json(categories);
   };
 

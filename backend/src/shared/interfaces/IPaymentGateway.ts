@@ -9,7 +9,7 @@ export interface PaymentDetails {
   amount: number;
   currency: string;
   description: string;
-  paymentMethodId?: string;
+  paymentMethodId: string;
 }
 export interface IPaymentGateway {
   processPayment(paymentDetails: PaymentDetails): Promise<PaymentResult>;

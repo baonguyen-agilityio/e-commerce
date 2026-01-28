@@ -3,6 +3,7 @@ import {
   CreateCategoryDto,
   ICategoryService,
   UpdateCategoryDto,
+  CategoryQueryParams,
 } from "./category.interface";
 import { Category } from "./entities/Category";
 import { BadRequestError, NotFoundError } from "@/shared/errors";
@@ -20,14 +21,30 @@ export class CategoryService implements ICategoryService {
     return category;
   }
 
-  async getAllCategories(): Promise<PaginatedResult<Category>> {
-    const categories = await this.categoryRepository.find();
+  async getAllCategories(params: CategoryQueryParams = {}): Promise<PaginatedResult<Category>> {
+    const page = params.page || 1;
+    const limit = params.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const queryBuilder = this.categoryRepository.createQueryBuilder("category");
+
+    if (params.search) {
+      queryBuilder.where(
+        "(category.name ILIKE :search OR category.description ILIKE :search)",
+        { search: `%${params.search}%` }
+      );
+    }
+
+    queryBuilder.orderBy("category.name", "ASC").skip(skip).take(limit);
+
+    const [data, total] = await queryBuilder.getManyAndCount();
+
     return {
-      data: categories,
-      total: categories.length,
-      page: 1,
-      limit: categories.length,
-      totalPages: 1,
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
     };
   }
 

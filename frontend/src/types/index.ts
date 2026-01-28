@@ -32,6 +32,12 @@ export interface Category {
   description: string | null;
 }
 
+export interface CategoryQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+}
+
 // Product types
 export interface Product {
   id: number;
@@ -96,6 +102,7 @@ export interface Order {
   total: number;
   status: string;
   paymentId: string | null;
+  failureReason: string | null;
   createdAt: string;
   items: OrderItem[];
 }

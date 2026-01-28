@@ -100,7 +100,8 @@ export default function AdminProductsPage() {
     limit: 9999,
   });
 
-  const { data: categories } = useCategories();
+  const { data: categoriesResult } = useCategories({ limit: 100 });
+  const categories = categoriesResult?.data || [];
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();

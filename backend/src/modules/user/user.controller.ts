@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { IUserService } from "./user.interface";
+import { IUserService, UserQueryParams } from "./user.interface";
 import { getAuthContext } from "@shared/dtos/AuthContext";
 
 export class UserController {
@@ -19,15 +19,7 @@ export class UserController {
   };
 
   getAllUsers = async (req: Request, res: Response): Promise<void> => {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const search = req.query.search as string;
-
-    const result = await this.userService.getAllUsers({
-      page,
-      limit,
-      search,
-    });
+    const result = await this.userService.getAllUsers(req.query as unknown as UserQueryParams);
     res.json(result);
   };
 

@@ -50,6 +50,9 @@ export class Order {
   @Column({ type: "varchar", nullable: true })
   paymentId: string;
 
+  @Column({ type: "text", nullable: true })
+  failureReason: string;
+
   @Index()
   @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
   createdAt: Date;

@@ -1,14 +1,18 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, UseQueryResult } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Category } from "@/types";
+import type { Category, PaginatedResult } from "@/types";
 import { toast } from "sonner";
 
-export function useCategories() {
-  return useQuery({
-    queryKey: ["categories"],
-    queryFn: () => api.getCategories(),
+export function useCategories(
+  params?: { page?: number; limit?: number; search?: string },
+  options?: any
+): UseQueryResult<PaginatedResult<Category>, Error> {
+  return useQuery<PaginatedResult<Category>, Error>({
+    queryKey: ["categories", params],
+    queryFn: () => api.getCategories(params),
+    ...options,
   });
 }
 

@@ -40,7 +40,7 @@ export default function AdminDashboardPage() {
   const { data: ordersData, isLoading: ordersLoading } = useOrders({
     limit: 10000,
   });
-  const { data: categories, isLoading: categoriesLoading } = useCategories();
+  const { data: categoriesData, isLoading: categoriesLoading } = useCategories({ limit: 100 });
 
   const isLoading = productsLoading || ordersLoading || categoriesLoading;
 
@@ -105,7 +105,7 @@ export default function AdminDashboardPage() {
   }, [orders]);
 
   const totalProducts = productsData?.total || 0;
-  const totalCategories = categories?.length || 0;
+  const totalCategories = categoriesData?.total || 0;
 
   // Monthly revenue chart data
   const chartData = useMemo(() => {

@@ -1,6 +1,7 @@
-import { Repository } from "typeorm";
+import { Brackets, Repository } from "typeorm";
 import { Order, OrderStatus } from "./entities/Order";
-import { CheckoutResult, IOrderService } from "./order.interface";
+import { CheckoutResult, IOrderService, OrderQueryParams } from "./order.interface";
+import { PaginatedResult } from "@/shared/interfaces/pagination";
 import { hasPermission, User, UserRole } from "@modules/user/entities/User";
 import { Cart } from "@modules/cart/entities/Cart";
 import { CartItem } from "@modules/cart/entities/CartItem";
@@ -34,7 +35,7 @@ export class OrderService implements IOrderService {
 
   async checkoutOrder(
     clerkId: string,
-    paymentMethodId?: string,
+    paymentMethodId: string,
   ): Promise<CheckoutResult> {
     const user = await this.findUserOrThrow(clerkId);
     const cart = await this.cartRepository.findOne({
@@ -143,6 +144,7 @@ export class OrderService implements IOrderService {
           return order;
         } else {
           order.status = OrderStatus.FAILED;
+          order.failureReason = paymentResult.error || "Unknown payment error";
           await manager.save(order);
 
           for (const item of order.items) {
@@ -168,15 +170,30 @@ export class OrderService implements IOrderService {
     return { order: finalOrder, success: true };
   }
 
-  async getOrdersByUser(clerkId: string): Promise<Order[]> {
+  async getOrdersByUser(
+    clerkId: string,
+    params: OrderQueryParams = {},
+  ): Promise<PaginatedResult<Order>> {
     const user = await this.findUserOrThrow(clerkId);
-    const orders = await this.orderRepository.find({
+    const page = params.page || 1;
+    const limit = params.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await this.orderRepository.findAndCount({
       where: { userId: user.id },
       relations: ["items", "items.product"],
       order: { createdAt: "DESC" },
+      skip,
+      take: limit,
     });
 
-    return orders;
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async getOrderById(
@@ -206,14 +223,8 @@ export class OrderService implements IOrderService {
   }
 
   async getOrders(
-    params: { page?: number; limit?: number; search?: string } = {},
-  ): Promise<{
-    data: Order[];
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  }> {
+    params: OrderQueryParams = {},
+  ): Promise<PaginatedResult<Order>> {
     const page = params.page || 1;
     const limit = params.limit || 10;
     const skip = (page - 1) * limit;
@@ -228,7 +239,13 @@ export class OrderService implements IOrderService {
       .take(limit);
 
     if (params.search) {
-      queryBuilder.andWhere("order.publicId LIKE :search", { search: `%${params.search}%` });
+      queryBuilder.andWhere(
+        new Brackets((qb) => {
+          qb.where("order.publicId ILIKE :search", { search: `%${params.search}%` })
+            .orWhere("user.name ILIKE :search", { search: `%${params.search}%` })
+            .orWhere("user.email ILIKE :search", { search: `%${params.search}%` });
+        }),
+      );
     }
 
     const [data, total] = await queryBuilder.getManyAndCount();

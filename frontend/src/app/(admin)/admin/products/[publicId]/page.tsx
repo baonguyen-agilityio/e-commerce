@@ -29,7 +29,8 @@ export default function ProductDetailPage() {
     const publicId = params.publicId as string;
 
     const { data: product, isLoading, error } = useProduct(publicId);
-    const { data: categories } = useCategories();
+    const { data: categoriesResult } = useCategories({ limit: 100 });
+    const categories = categoriesResult?.data || [];
     const updateProduct = useUpdateProduct();
 
     const [isEditOpen, setIsEditOpen] = useState(false);

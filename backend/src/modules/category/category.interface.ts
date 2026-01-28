@@ -11,8 +11,14 @@ export interface UpdateCategoryDto {
   description?: string;
 }
 
+export interface CategoryQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+}
+
 export interface ICategoryService {
-  getAllCategories(): Promise<PaginatedResult<Category>>;
+  getAllCategories(params?: CategoryQueryParams): Promise<PaginatedResult<Category>>;
   getCategoryById(publicId: string): Promise<Category | null>;
   createCategory(data: CreateCategoryDto): Promise<Category>;
   updateCategory(

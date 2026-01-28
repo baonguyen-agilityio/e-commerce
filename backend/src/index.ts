@@ -47,15 +47,17 @@ AppDataSource.initialize()
 
     const container = createContainer(AppDataSource);
 
+    const API_PREFIX = `/api/${env.API_VERSION}`;
+
     app.use("/api", apiLimiter);
-    app.use("/api/users", createUserRoutes(container.userController));
-    app.use("/api/products", createProductRoutes(container.productController));
+    app.use(`${API_PREFIX}/users`, createUserRoutes(container.userController));
+    app.use(`${API_PREFIX}/products`, createProductRoutes(container.productController));
     app.use(
-      "/api/categories",
+      `${API_PREFIX}/categories`,
       createCategoryRoutes(container.categoryController),
     );
-    app.use("/api/cart", createCartRoutes(container.cartController));
-    app.use("/api/orders", createOrderRoutes(container.orderController));
+    app.use(`${API_PREFIX}/cart`, createCartRoutes(container.cartController));
+    app.use(`${API_PREFIX}/orders`, createOrderRoutes(container.orderController));
 
     app.use(errorHandler);
 

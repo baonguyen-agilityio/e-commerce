@@ -23,13 +23,14 @@ export function useOrders(params?: OrderQueryParams, options?: object) {
   };
 }
 
-export function useOrdersByUser() {
+export function useOrdersByUser(params?: OrderQueryParams, options?: object) {
   const { data: user, isLoading: isUserLoading } = useCurrentUser();
 
-  const query = useQuery({
-    queryKey: ["orders-by-user"],
-    queryFn: () => api.getOrdersByUser(),
+  const query = useQuery<PaginatedResult<Order>>({
+    queryKey: ["orders-by-user", params],
+    queryFn: () => api.getOrdersByUser(params),
     enabled: !!user,
+    ...options,
   });
 
   return {
@@ -51,7 +52,7 @@ export function useCheckout() {
   const router = useRouter();
 
   return useMutation({
-    mutationFn: (paymentMethodId?: string) => api.checkout(paymentMethodId),
+    mutationFn: (paymentMethodId: string) => api.checkout(paymentMethodId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });

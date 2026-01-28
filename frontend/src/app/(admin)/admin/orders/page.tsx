@@ -27,6 +27,7 @@ import {
   CreditCard,
   Sprout,
   Leaf,
+  AlertTriangle,
 } from "lucide-react";
 import { useCallback, useState } from "react";
 import Image from "next/image";
@@ -132,7 +133,14 @@ export default function AdminOrdersPage() {
           className:
             "bg-secondary text-muted-foreground border-border font-bold",
         };
-        return <Badge className={config.className}>{config.label}</Badge>;
+        return (
+          <div className="flex items-center gap-2">
+            <Badge className={config.className}>{config.label}</Badge>
+            {row.original.status === "FAILED" && row.original.failureReason && (
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+            )}
+          </div>
+        );
       },
     },
     {
@@ -294,6 +302,16 @@ export default function AdminOrdersPage() {
                   </CardContent>
                 </Card>
               </div>
+
+              {viewingOrder.status === "FAILED" && viewingOrder.failureReason && (
+                <div className="flex items-center gap-3 p-4 bg-destructive/5 border border-destructive/20 rounded-2xl text-destructive text-sm font-medium">
+                  <AlertTriangle className="h-5 w-5 shrink-0" />
+                  <p>
+                    <span className="font-bold mr-1">Failure Reason:</span>
+                    {viewingOrder.failureReason}
+                  </p>
+                </div>
+              )}
 
               <Separator className="bg-border" />
 

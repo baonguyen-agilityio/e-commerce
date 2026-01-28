@@ -14,11 +14,16 @@ export const validate = (schema: ZodType, source: Source = 'body') => {
         field: issue.path.join("."),
         message: issue.message,
       }));
-      
+
       throw new ValidationError(details);
     }
 
-    req[source] = result.data as any;
+    Object.defineProperty(req, source, {
+      value: result.data,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
     next();
   };
 };

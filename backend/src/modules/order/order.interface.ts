@@ -17,10 +17,13 @@ export interface OrderQueryParams {
 export interface IOrderService {
   checkoutOrder(
     clerkId: string,
-    paymentMethodId?: string,
+    paymentMethodId: string,
   ): Promise<CheckoutResult>;
   getOrders(params?: OrderQueryParams): Promise<PaginatedResult<Order>>;
-  getOrdersByUser(clerkId: string): Promise<Order[]>;
+  getOrdersByUser(
+    clerkId: string,
+    params?: OrderQueryParams,
+  ): Promise<PaginatedResult<Order>>;
   getOrderById(
     publicId: string,
     clerkId: string,

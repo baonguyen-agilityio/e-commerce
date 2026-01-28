@@ -1,3 +1,4 @@
+import { PaginatedResult } from "@/shared/interfaces/pagination";
 import { User, UserRole } from "./entities/User";
 
 export interface CreateUserDto {
@@ -14,19 +15,15 @@ export interface ChangeRoleDto {
   requestingUserRole: UserRole;
 }
 
+export interface UserQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+}
+
 export interface IUserService {
   findOrCreate(data: CreateUserDto): Promise<User>;
-  getAllUsers(params?: {
-    page?: number;
-    limit?: number;
-    search?: string;
-  }): Promise<{
-    data: User[];
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  }>;
+  getAllUsers(params?: UserQueryParams): Promise<PaginatedResult<User>>;
   changeRole(changeRoleDto: ChangeRoleDto): Promise<User>;
   deleteUser(clerkId: string, requestingUserRole: UserRole): Promise<boolean>;
   restoreUser(clerkId: string): Promise<User>;

@@ -21,6 +21,7 @@ import {
     Sprout,
     ArrowRight,
     ExternalLink,
+    AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +31,8 @@ interface OrderCardProps {
 
 export function OrderCard({ order }: OrderCardProps) {
     const [isOpen, setIsOpen] = useState(false);
+
+    const isFailed = order.status === "FAILED";
 
     // Get first 4 items for preview
     const previewItems = order.items.slice(0, 4);
@@ -78,6 +81,19 @@ export function OrderCard({ order }: OrderCardProps) {
                         </div>
                     </div>
                 </div>
+
+                {/* Failure Reason Alert */}
+                {isFailed && order.failureReason && (
+                    <div className="flex items-center gap-3 p-4 bg-destructive/5 border border-destructive/20 rounded-2xl text-destructive text-sm font-medium animate-in fade-in slide-in-from-top-1 duration-500">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10 shrink-0">
+                            <AlertTriangle className="h-4 w-4" />
+                        </div>
+                        <p>
+                            <span className="font-bold mr-1">Payment failed:</span>
+                            {order.failureReason}
+                        </p>
+                    </div>
+                )}
 
                 {/* Preview Row: Thumbnails */}
                 <div className="flex items-center justify-between gap-4">

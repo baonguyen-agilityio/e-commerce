@@ -8,9 +8,10 @@ import type {
   ProductQueryParams,
   OrderQueryParams,
   UserQueryParams,
+  CategoryQueryParams,
 } from "@/types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
 
 class ApiClient {
   private getTokenFn: (() => Promise<string | null>) | null = null;
@@ -106,14 +107,16 @@ class ApiClient {
   }
 
   // Categories
-  async getCategories(): Promise<Category[]> {
-    const result = await this.fetch<PaginatedResult<Category> | Category[]>(
-      "/categories",
+  async getCategories(params?: CategoryQueryParams): Promise<PaginatedResult<Category>> {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set("search", params.search);
+    if (params?.page) searchParams.set("page", params.page.toString());
+    if (params?.limit) searchParams.set("limit", params.limit.toString());
+
+    const query = searchParams.toString();
+    return this.fetch<PaginatedResult<Category>>(
+      `/categories${query ? `?${query}` : ""}`,
     );
-    if (Array.isArray(result)) {
-      return result;
-    }
-    return result.data;
   }
 
   async getCategory(publicId: string): Promise<Category> {
@@ -167,7 +170,7 @@ class ApiClient {
 
   // Orders
   async checkout(
-    paymentMethodId?: string,
+    paymentMethodId: string,
   ): Promise<{ order: Order; success: boolean }> {
     return this.fetch<{ order: Order; success: boolean }>("/orders", {
       method: "POST",
@@ -187,8 +190,17 @@ class ApiClient {
     );
   }
 
-  async getOrdersByUser(): Promise<Order[]> {
-    return this.fetch<Order[]>(`/orders/me`);
+  async getOrdersByUser(
+    params?: OrderQueryParams,
+  ): Promise<PaginatedResult<Order>> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set("page", params.page.toString());
+    if (params?.limit) searchParams.set("limit", params.limit.toString());
+
+    const query = searchParams.toString();
+    return this.fetch<PaginatedResult<Order>>(
+      `/orders/me${query ? `?${query}` : ""}`,
+    );
   }
 
   async getOrder(publicId: string): Promise<Order> {

@@ -5,6 +5,7 @@ import {
 } from "@/modules/user/entities/User";
 import { getAuth } from "@clerk/express";
 import { UnauthorizedError, ForbiddenError } from "../errors";
+import { ErrorMessages } from "../errors/messages";
 
 export const requireAuth = (minRole?: UserRole) => {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -12,7 +13,7 @@ export const requireAuth = (minRole?: UserRole) => {
       const auth = getAuth(req);
 
       if (!auth.userId) {
-        throw new UnauthorizedError("Authentication required");
+        throw new UnauthorizedError(ErrorMessages.AUTH_REQUIRED);
       }
 
       const metadata = auth.sessionClaims?.publicMetadata as { role?: UserRole } | undefined;
@@ -28,7 +29,7 @@ export const requireAuth = (minRole?: UserRole) => {
 
       if (minRole) {
         if (!hasPermission(role, minRole)) {
-          throw new ForbiddenError(`${minRole} or higher access required`);
+          throw new ForbiddenError(ErrorMessages.INSUFFICIENT_PERMISSIONS);
         }
       }
 

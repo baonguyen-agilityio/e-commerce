@@ -3,13 +3,13 @@ import { UserController } from "./user.controller";
 import { requireAuth } from "@/shared/middleware/requireAuth";
 import { UserRole } from "./entities/User";
 import { validate } from "@/shared/middleware/validate";
-import { changeRoleSchema } from "./user.validation";
+import { changeRoleSchema, userQuerySchema } from "./user.validation";
 
 export function createUserRoutes(controller: UserController): Router {
   const router = Router();
 
   router.get("/me", requireAuth(), controller.getMe);
-  router.get("/", requireAuth(UserRole.STAFF), controller.getAllUsers);
+  router.get("/", requireAuth(UserRole.STAFF), validate(userQuerySchema, "query"), controller.getAllUsers);
   router.post(
     "/change-role/:clerkId",
     requireAuth(UserRole.ADMIN),

@@ -1,36 +1,12 @@
 import { Request, Response } from "express";
 import { ProductService } from "./product.service";
+import { ProductQueryParams } from "./product.interface";
 
 export class ProductController {
   constructor(private readonly productService: ProductService) { }
 
   getAllProducts = async (req: Request, res: Response) => {
-    const { page, limit, search, category, categoryPublicId, isActive, inStock, minPrice, maxPrice, sort, order } =
-      req.query;
-
-    const pageNum = parseInt(page as string, 10);
-    const limitNum = parseInt(limit as string, 10);
-    const isActiveBool = isActive === "true" ? true : isActive === "false" ? false : undefined;
-    const inStockBool = inStock === "true" ? true : inStock === "false" ? false : undefined;
-
-    const minPriceNum = minPrice ? parseFloat(minPrice as string) : undefined;
-    const maxPriceNum = maxPrice ? parseFloat(maxPrice as string) : undefined;
-
-    const params = {
-      page: isNaN(pageNum) ? 1 : pageNum,
-      limit: isNaN(limitNum) ? 10 : limitNum,
-      search: search as string | undefined,
-      category: category as string | undefined,
-      categoryPublicId: categoryPublicId as string | undefined,
-      isActive: isActiveBool,
-      inStock: inStockBool,
-      minPrice: (minPriceNum !== undefined && isNaN(minPriceNum)) ? undefined : minPriceNum,
-      maxPrice: (maxPriceNum !== undefined && isNaN(maxPriceNum)) ? undefined : maxPriceNum,
-      sort: sort as "name" | "price" | "createdAt" | undefined,
-      order: order as "ASC" | "DESC" | undefined,
-    };
-
-    const result = await this.productService.getAllProducts(params);
+    const result = await this.productService.getAllProducts(req.query as unknown as ProductQueryParams);
     res.json(result);
   };
 

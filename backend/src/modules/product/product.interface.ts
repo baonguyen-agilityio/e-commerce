@@ -34,6 +34,7 @@ export interface ProductQueryParams {
   sort?: 'name' | 'price' | 'createdAt';
   order?: 'ASC' | 'DESC';
 }
+
 export interface IProductService {
   getAllProducts(params?: ProductQueryParams): Promise<PaginatedResult<Product>>;
   getProductByPublicId(publicId: string): Promise<Product | null>;

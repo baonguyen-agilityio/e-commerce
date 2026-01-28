@@ -1,10 +1,10 @@
-import z from "zod";
+import { z } from "zod";
 
-export const addItemToCartSchema = z.object({
-  publicId: z.string().min(1, "Product ID is required"),
-  quantity: z.number().int().positive().optional(),
+export const addItemSchema = z.object({
+  publicId: z.string().uuid({ message: "We couldn't recognize this product's ID" }),
+  quantity: z.number().int().min(1, { message: "Please add at least one item" }).default(1),
 });
 
-export const updateItemQuantitySchema = z.object({
-  quantity: z.number().int().min(1, "Quantity must be at least 1"),
+export const updateQuantitySchema = z.object({
+  quantity: z.number().int().min(1, { message: "Quantity must be at least 1" }),
 });

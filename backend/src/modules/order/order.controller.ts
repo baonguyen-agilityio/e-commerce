@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
-import { IOrderService } from "./order.interface";
+import { IOrderService, OrderQueryParams } from "./order.interface";
 import { getAuthContext } from "@shared/dtos/AuthContext";
 
 export class OrderController {
   constructor(private orderService: IOrderService) { }
+
   checkoutOrder = async (req: Request, res: Response) => {
     const authContext = getAuthContext(req);
     const { paymentMethodId } = req.body;
@@ -14,22 +15,18 @@ export class OrderController {
     res.status(200).json(result);
   };
 
-  getOrders = async (req: Request, res: Response) => {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const search = req.query.search as string;
-
-    const result = await this.orderService.getOrders({ page, limit, search });
+  getOrders = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.orderService.getOrders(req.query as unknown as OrderQueryParams);
     res.status(200).json(result);
   };
 
-  getOrdersByUser = async (req: Request, res: Response) => {
+  getOrdersByUser = async (req: Request, res: Response): Promise<void> => {
     const authContext = getAuthContext(req);
-    const result = await this.orderService.getOrdersByUser(authContext.userId);
+    const result = await this.orderService.getOrdersByUser(authContext.userId, req.query as unknown as OrderQueryParams);
     res.status(200).json(result);
   };
 
-  getOrderById = async (req: Request, res: Response) => {
+  getOrderById = async (req: Request, res: Response): Promise<void> => {
     const authContext = getAuthContext(req);
     const publicId = req.params.orderId;
     const result = await this.orderService.getOrderById(

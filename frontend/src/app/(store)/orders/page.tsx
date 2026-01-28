@@ -6,12 +6,23 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { OrderCard } from "./order-card";
 import { Button } from "@/components/ui/button";
-import { Package, Calendar, MapPin, Truck, Leaf, ArrowRight, Sprout, ShoppingBag } from "lucide-react";
+import { Package, Calendar, MapPin, Truck, Leaf, ArrowRight, Sprout, ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
+import { keepPreviousData } from "@tanstack/react-query";
 
 export default function OrdersPage() {
-    const { data: orders, isLoading, isError } = useOrdersByUser();
+    const [page, setPage] = useState(1);
+    const limit = 5;
+
+    const { data, isLoading, isError } = useOrdersByUser(
+        { page, limit },
+        { placeholderData: keepPreviousData }
+    );
+
+    const orders = data?.data;
+    const totalPages = data?.totalPages || 1;
 
     // Show loading if explicitly loading OR if we have no data and no error yet
     // This prevents the "empty state" flash while the query is initializing
@@ -69,6 +80,48 @@ export default function OrdersPage() {
                     <OrderCard key={order.id} order={order} />
                 ))}
             </div>
+
+            {totalPages > 1 && (
+                <div className="mt-12 flex items-center justify-center gap-4">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={page === 1 || isLoading}
+                        className="h-12 w-12 rounded-full border-primary/20 hover:border-primary hover:bg-primary/5 cursor-pointer disabled:opacity-40"
+                    >
+                        <ChevronLeft className="h-6 w-6 text-primary" />
+                    </Button>
+
+                    <div className="flex items-center gap-2">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                            <Button
+                                key={p}
+                                variant={p === page ? "default" : "outline"}
+                                size="icon"
+                                onClick={() => setPage(p)}
+                                disabled={isLoading}
+                                className={`h-12 w-12 rounded-full cursor-pointer transition-all duration-300 ${p === page
+                                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-110"
+                                        : "border-primary/20 hover:border-primary hover:bg-primary/5 text-muted-foreground"
+                                    }`}
+                            >
+                                {p}
+                            </Button>
+                        ))}
+                    </div>
+
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                        disabled={page === totalPages || isLoading}
+                        className="h-12 w-12 rounded-full border-primary/20 hover:border-primary hover:bg-primary/5 cursor-pointer disabled:opacity-40"
+                    >
+                        <ChevronRight className="h-6 w-6 text-primary" />
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }
