@@ -61,7 +61,7 @@ export class CategoryService implements ICategoryService {
   async updateCategory(
     publicId: string,
     data: UpdateCategoryDto,
-  ): Promise<Category | null> {
+  ): Promise<Category> {
     const category = await this.findCategoryOrThrow(publicId);
     Object.assign(category, data);
     return this.categoryRepository.save(category);

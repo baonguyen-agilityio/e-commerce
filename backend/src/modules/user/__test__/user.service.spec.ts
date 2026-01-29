@@ -193,9 +193,12 @@ describe("UserService", () => {
 
       const mockQueryBuilder = {
         withDeleted: vi.fn().mockReturnThis(),
+        addSelect: vi.fn().mockReturnThis(),
+        orderBy: vi.fn().mockReturnThis(),
+        addOrderBy: vi.fn().mockReturnThis(),
+        andWhere: vi.fn().mockReturnThis(),
         skip: vi.fn().mockReturnThis(),
         take: vi.fn().mockReturnThis(),
-        orderBy: vi.fn().mockReturnThis(),
         getManyAndCount: vi.fn().mockResolvedValue([users, users.length]),
       };
 
@@ -215,7 +218,7 @@ describe("UserService", () => {
     it("should delete user successfully", async () => {
       mockUserRepository.findOne.mockResolvedValue(mockCustomer);
       mockUserRepository.count.mockResolvedValue(2);
-      mockUserRepository.delete.mockResolvedValue({ affected: 1 });
+      mockUserRepository.softRemove.mockResolvedValue(mockCustomer);
 
       const result = await userService.deleteUser(
         "clerk_customer",
@@ -223,9 +226,9 @@ describe("UserService", () => {
       );
 
       expect(result).toBe(true);
-      expect(mockUserRepository.delete).toHaveBeenCalledWith({
-        clerkId: "clerk_customer",
-      });
+      expect(mockUserRepository.softRemove).toHaveBeenCalledWith(
+        mockCustomer,
+      );
     });
 
     it("should throw ForbiddenError when trying to delete SUPER_ADMIN", async () => {

@@ -24,6 +24,6 @@ export interface ICategoryService {
   updateCategory(
     publicId: string,
     data: Partial<UpdateCategoryDto>,
-  ): Promise<Category | null>;
+  ): Promise<Category>;
   deleteCategory(publicId: string): Promise<boolean>;
 }

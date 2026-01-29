@@ -78,7 +78,7 @@ describe("ProductController", () => {
                 price: 50.00,
                 description: "A test product",
                 stock: 5,
-                categoryPublicId: "cat-1"
+                categoryPublicId: "550e8400-e29b-41d4-a716-446655440000"
             };
 
             const createdProduct = createMockProduct({ ...newProductData, publicId: "prod-101" });

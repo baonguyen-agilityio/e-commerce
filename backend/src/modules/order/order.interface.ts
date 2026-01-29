@@ -4,7 +4,7 @@ import { Order } from "./entities/Order";
 
 export interface CheckoutResult {
   success: boolean;
-  order?: Order;
+  order: Order;
   error?: string;
 }
 

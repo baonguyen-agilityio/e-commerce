@@ -48,7 +48,7 @@ export class CartService implements ICartService {
     };
   }
 
-  async addItemToCart(clerkId: string, publicId: string, quantity: number = 1): Promise<CartItem | null> {
+  async addItemToCart(clerkId: string, publicId: string, quantity: number = 1): Promise<CartItem> {
     const cart = await this.getOrCreateCart(clerkId);
 
     const product = await this.productRepository.findOne({
@@ -79,20 +79,17 @@ export class CartService implements ICartService {
         productId: product.id,
         quantity,
       });
+      cartItem.product = product;
     }
 
-    await this.cartItemRepository.save(cartItem);
-    return this.cartItemRepository.findOne({
-      where: { id: cartItem.id },
-      relations: ['product'],
-    });
+    return this.cartItemRepository.save(cartItem);
   }
 
   async updateItemQuantity(
     clerkId: string,
     publicId: string,
     quantity: number,
-  ): Promise<CartItem | null> {
+  ): Promise<CartItem> {
     const cart = await this.getOrCreateCart(clerkId);
 
     const cartItem = await this.cartItemRepository.findOne({
@@ -105,8 +102,7 @@ export class CartService implements ICartService {
     }
 
     if (quantity <= 0) {
-      await this.cartItemRepository.delete(cartItem.id);
-      return null;
+      throw new BadRequestError("Quantity must be at least 1. Use removeItemFromCart to delete items.");
     }
 
     if (cartItem.product.stock < quantity) {

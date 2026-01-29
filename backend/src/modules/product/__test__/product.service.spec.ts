@@ -51,11 +51,18 @@ describe("ProductService", () => {
         categoryPublicId: "cat-1",
       };
 
+      const mockCategory = { id: 1, publicId: "cat-1", name: "Test Category" };
+
+      mockProductRepository.manager.findOne.mockResolvedValue(mockCategory);
       mockProductRepository.create.mockReturnValue({ ...createDto, publicId: "prod-2" });
       mockProductRepository.save.mockResolvedValue({ ...createDto, publicId: "prod-2" });
 
       const result = await productService.createProduct(createDto);
 
+      expect(mockProductRepository.manager.findOne).toHaveBeenCalledWith(
+        "Category",
+        { where: { publicId: "cat-1" } }
+      );
       expect(mockProductRepository.create).toHaveBeenCalled();
       expect(mockProductRepository.save).toHaveBeenCalled();
       expect(result.name).toBe(createDto.name);
@@ -69,6 +76,9 @@ describe("ProductService", () => {
         categoryPublicId: "cat-1",
       };
 
+      const mockCategory = { id: 1, publicId: "cat-1", name: "Test Category" };
+
+      mockProductRepository.manager.findOne.mockResolvedValue(mockCategory);
       mockProductRepository.create.mockImplementation((data) => data);
       mockProductRepository.save.mockImplementation((data) =>
         Promise.resolve(data),
