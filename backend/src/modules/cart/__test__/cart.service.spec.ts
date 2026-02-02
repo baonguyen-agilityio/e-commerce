@@ -34,7 +34,7 @@ describe("CartService", () => {
 
         mockProduct = createMockProduct({
             id: 1,
-            publicId: "prod-123",
+            productId: "prod-123",
             name: "Test Product",
             price: 50.00,
             stock: 10,
@@ -43,11 +43,9 @@ describe("CartService", () => {
 
         mockCartItem = createMockCartItem({
             id: 1,
-            publicId: "item-123",
-            cartId: 1,
-            productId: 1,
             quantity: 2,
             product: mockProduct,
+            cart: mockCart,
         });
 
         mockCart = createMockCart({
@@ -164,9 +162,9 @@ describe("CartService", () => {
 
             expect(result).toEqual(mockCartItem);
             expect(mockCartItemRepository.create).toHaveBeenCalledWith({
-                cartId: 1,
-                productId: 1,
                 quantity: 2,
+                product: mockProduct,
+                cart: emptyCart,
             });
             expect(mockCartItemRepository.save).toHaveBeenCalled();
         });
@@ -391,9 +389,7 @@ describe("CartService", () => {
             expect(result.items).toHaveLength(0);
             expect(result.subtotal).toBe(0);
             expect(result.itemCount).toBe(0);
-            expect(mockCartItemRepository.delete).toHaveBeenCalledWith({
-                cartId: mockCart.id,
-            });
+            expect(mockCartItemRepository.delete).toHaveBeenCalledWith({ cart: { id: mockCart.id } });
         });
 
         it("should work even if cart is already empty", async () => {

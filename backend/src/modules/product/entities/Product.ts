@@ -24,7 +24,7 @@ export class Product {
 
   @Index({ unique: true })
   @Column({ type: "varchar", unique: true })
-  publicId: string;
+  productId: string;
 
   @Index()
   @Column({ type: "varchar" })
@@ -42,10 +42,6 @@ export class Product {
 
   @Column({ type: "varchar", nullable: true })
   imageUrl: string;
-
-  @Index()
-  @Column({ type: "int" })
-  categoryId: number;
 
   @ManyToOne(() => Category, (category) => category.products)
   @JoinColumn({ name: "categoryId" })
@@ -73,9 +69,9 @@ export class Product {
 
   @BeforeInsert()
   @BeforeUpdate()
-  generatePublicId() {
-    if (!this.publicId) {
-      this.publicId = randomUUID();
+  generateProductId() {
+    if (!this.productId) {
+      this.productId = randomUUID();
     }
   }
 }

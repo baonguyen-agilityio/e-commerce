@@ -13,10 +13,10 @@ export class CartController {
 
   addItemToCart = async (req: Request, res: Response) => {
     const authContext = getAuthContext(req);
-    const { publicId, quantity } = req.body;
+    const { productId, quantity } = req.body;
     const cartItem = await this.cartService.addItemToCart(
       authContext.userId,
-      publicId,
+      productId,
       quantity,
     );
     res.status(201).json(cartItem);
@@ -24,11 +24,11 @@ export class CartController {
 
   updateItemQuantity = async (req: Request, res: Response) => {
     const authContext = getAuthContext(req);
-    const publicId = req.params.publicId;
+    const cartItemId = req.params.cartItemId;
     const { quantity } = req.body;
     const cartItem = await this.cartService.updateItemQuantity(
       authContext.userId,
-      publicId,
+      cartItemId,
       quantity,
     );
     res.status(200).json(cartItem);
@@ -36,8 +36,8 @@ export class CartController {
 
   removeItemFromCart = async (req: Request, res: Response) => {
     const authContext = getAuthContext(req);
-    const publicId = req.params.publicId;
-    const cart = await this.cartService.removeItemFromCart(authContext.userId, publicId);
+    const cartItemId = req.params.cartItemId;
+    const cart = await this.cartService.removeItemFromCart(authContext.userId, cartItemId);
     res.status(200).json(cart);
   };
 

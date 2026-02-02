@@ -25,7 +25,7 @@ export interface IOrderService {
     params?: OrderQueryParams,
   ): Promise<PaginatedResult<Order>>;
   getOrderById(
-    publicId: string,
+    orderId: string,
     clerkId: string,
     role: UserRole,
   ): Promise<Order | null>;

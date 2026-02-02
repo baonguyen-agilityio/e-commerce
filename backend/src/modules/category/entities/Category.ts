@@ -18,7 +18,7 @@ export class Category {
 
   @Index({ unique: true })
   @Column({ type: "varchar", unique: true })
-  publicId: string;
+  categoryId: string;
 
   @Index()
   @Column({ type: "varchar" })
@@ -37,9 +37,9 @@ export class Category {
   products: Product[];
 
   @BeforeInsert()
-  generatePublicId() {
-    if (!this.publicId) {
-      this.publicId = randomUUID();
+  generateCategoryId() {
+    if (!this.categoryId) {
+      this.categoryId = randomUUID();
     }
   }
 }

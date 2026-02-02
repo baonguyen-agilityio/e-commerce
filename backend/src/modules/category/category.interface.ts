@@ -19,11 +19,11 @@ export interface CategoryQueryParams {
 
 export interface ICategoryService {
   getAllCategories(params?: CategoryQueryParams): Promise<PaginatedResult<Category>>;
-  getCategoryById(publicId: string): Promise<Category | null>;
+  getCategoryById(categoryId: string): Promise<Category | null>;
   createCategory(data: CreateCategoryDto): Promise<Category>;
   updateCategory(
-    publicId: string,
+    categoryId: string,
     data: Partial<UpdateCategoryDto>,
   ): Promise<Category>;
-  deleteCategory(publicId: string): Promise<boolean>;
+  deleteCategory(categoryId: string): Promise<boolean>;
 }

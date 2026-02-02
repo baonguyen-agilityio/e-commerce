@@ -55,7 +55,7 @@ export class OrderService implements IOrderService {
 
     for (const item of cart.items) {
       const product = await this.orderRepository.manager.findOne(Product, {
-        where: { publicId: item.product.publicId },
+        where: { productId: item.product.productId },
       });
 
       if (!product || product.stock < item.quantity) {
@@ -81,7 +81,7 @@ export class OrderService implements IOrderService {
       async (manager) => {
         for (const item of cart.items) {
           const product = await manager.findOne(Product, {
-            where: { publicId: item.product.publicId },
+            where: { productId: item.product.productId },
             lock: { mode: "pessimistic_write" },
           });
 
@@ -93,7 +93,7 @@ export class OrderService implements IOrderService {
         }
 
         const order = manager.create(Order, {
-          userId: user.id,
+          user,
           total,
           status: OrderStatus.PENDING_PAYMENT,
         });
@@ -101,8 +101,8 @@ export class OrderService implements IOrderService {
 
         const orderItems = cart.items.map((cartItem) =>
           manager.create(OrderItem, {
-            orderId: order.id,
-            productId: cartItem.product.id,
+            order,
+            product: cartItem.product,
             quantity: cartItem.quantity,
             priceAtPurchase: cartItem.product.price,
           }),
@@ -115,7 +115,7 @@ export class OrderService implements IOrderService {
           });
         }
 
-        return order.publicId;
+        return order.orderId;
       },
     );
 
@@ -129,7 +129,7 @@ export class OrderService implements IOrderService {
     const finalOrder = await this.orderRepository.manager.transaction(
       async (manager) => {
         const order = await manager.findOne(Order, {
-          where: { publicId: orderPublicId },
+          where: { orderId: orderPublicId },
           relations: ["items", "items.product"],
         });
 
@@ -140,7 +140,7 @@ export class OrderService implements IOrderService {
           order.status = OrderStatus.PAID;
           order.paymentId = paymentResult.paymentId;
           await manager.save(order);
-          await manager.delete(CartItem, { cartId: cart.id });
+          await manager.delete(CartItem, { cart: { id: cart.id } });
           return order;
         } else {
           order.status = OrderStatus.FAILED;
@@ -148,7 +148,7 @@ export class OrderService implements IOrderService {
           await manager.save(order);
 
           for (const item of order.items) {
-            await manager.update(Product, item.productId, {
+            await manager.update(Product, item.product.id, {
               stock: () => `stock + ${item.quantity}`,
             });
           }
@@ -180,7 +180,7 @@ export class OrderService implements IOrderService {
     const skip = (page - 1) * limit;
 
     const [data, total] = await this.orderRepository.findAndCount({
-      where: { userId: user.id },
+      where: { user: { id: user.id } },
       relations: ["items", "items.product"],
       order: { createdAt: "DESC" },
       skip,
@@ -197,12 +197,12 @@ export class OrderService implements IOrderService {
   }
 
   async getOrderById(
-    publicId: string,
+    orderId: string,
     clerkId: string,
     role: UserRole,
   ): Promise<Order | null> {
     const order = await this.orderRepository.findOne({
-      where: { publicId },
+      where: { orderId },
       relations: ["items", "items.product"],
     });
 
@@ -215,7 +215,7 @@ export class OrderService implements IOrderService {
     }
 
     const user = await this.findUserOrThrow(clerkId);
-    if (order.userId !== user.id) {
+    if (order.user.id !== user.id) {
       throw new ForbiddenError(ErrorMessages.NOT_AUTHORIZED_TO_VIEW_ORDER);
     }
 
@@ -241,7 +241,7 @@ export class OrderService implements IOrderService {
     if (params.search) {
       queryBuilder.andWhere(
         new Brackets((qb) => {
-          qb.where("order.publicId ILIKE :search", { search: `%${params.search}%` })
+          qb.where("order.orderId ILIKE :search", { search: `%${params.search}%` })
             .orWhere("user.name ILIKE :search", { search: `%${params.search}%` })
             .orWhere("user.email ILIKE :search", { search: `%${params.search}%` });
         }),

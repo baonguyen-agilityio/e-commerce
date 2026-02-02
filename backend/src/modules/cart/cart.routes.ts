@@ -10,8 +10,8 @@ export function createCartRoutes(controller: CartController): Router {
   router.get("/", requireAuth(), controller.getCart);
   router.delete("/", requireAuth(), controller.clearCart);
   router.post("/items", requireAuth(), validate(addItemSchema), controller.addItemToCart);
-  router.put("/items/:publicId", requireAuth(), validate(updateQuantitySchema), controller.updateItemQuantity);
-  router.delete("/items/:publicId", requireAuth(), controller.removeItemFromCart);
+  router.put("/items/:cartItemId", requireAuth(), validate(updateQuantitySchema), controller.updateItemQuantity);
+  router.delete("/items/:cartItemId", requireAuth(), controller.removeItemFromCart);
 
   return router;
 }

@@ -10,8 +10,7 @@ const booleanString = z.preprocess((val) => {
 export const productQuerySchema = paginationSchema
   .merge(searchSchema)
   .extend({
-    category: z.string().optional(),
-    categoryPublicId: z.string().uuid({ message: "Invalid category ID" }).optional(),
+    categoryId: z.string().optional(),
     isActive: booleanString,
     inStock: booleanString,
     minPrice: z.coerce.number().min(0).optional(),
@@ -26,7 +25,7 @@ export const createProductSchema = z.object({
   price: z.number().min(0, { message: "Price cannot be negative" }),
   stock: z.number().min(0, { message: "Stock level cannot be negative" }).optional(),
   imageUrl: z.string().url({ message: "Please enter a valid image URL" }).optional(),
-  categoryPublicId: z.string().uuid({ message: "Invalid category ID" }),
+  categoryId: z.string().optional(), // TODO: validate categoryId
   isActive: z.boolean().optional(),
 });
 
@@ -36,6 +35,6 @@ export const updateProductSchema = z.object({
   price: z.number().min(0, { message: "Price cannot be negative" }).optional(),
   stock: z.number().min(0, { message: "Stock level cannot be negative" }).optional(),
   imageUrl: z.string().url({ message: "Please enter a valid image URL" }).optional(),
-  categoryPublicId: z.string().uuid({ message: "Invalid category ID" }).optional(),
+  categoryId: z.string().optional(),
   isActive: z.boolean().optional(),
 });

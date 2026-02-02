@@ -13,24 +13,18 @@ import { Cart } from "./Cart";
 import { Product } from "@/modules/product/entities/Product";
 
 @Entity('cart_items')
-@Unique(['cartId', 'productId'])
+@Unique(['cart', 'product'])
 export class CartItem {
     @PrimaryGeneratedColumn()
     id: number;
 
     @Index({ unique: true })
     @Column({ type: "varchar", unique: true })
-    publicId: string;
-
-    @Column({ type: 'int' })
-    cartId: number;
+    cartItemId: string;
 
     @ManyToOne(() => Cart, (cart) => cart.items, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'cartId' })
     cart: Cart;
-
-    @Column({ type: 'int' })
-    productId: number;
 
     @ManyToOne(() => Product, (product) => product.cartItems, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'productId' })
@@ -40,9 +34,9 @@ export class CartItem {
     quantity: number;
 
     @BeforeInsert()
-    generatePublicId() {
-        if (!this.publicId) {
-            this.publicId = randomUUID();
+    generateCartItemId() {
+        if (!this.cartItemId) {
+            this.cartItemId = randomUUID();
         }
     }
 }

@@ -13,8 +13,8 @@ import { ErrorMessages } from "@/shared/errors/messages";
 export class CategoryService implements ICategoryService {
   constructor(private readonly categoryRepository: Repository<Category>) { }
 
-  private async findCategoryOrThrow(publicId: string): Promise<Category> {
-    const category = await this.categoryRepository.findOneBy({ publicId });
+  private async findCategoryOrThrow(categoryId: string): Promise<Category> {
+    const category = await this.categoryRepository.findOneBy({ categoryId });
     if (!category) {
       throw new NotFoundError(ErrorMessages.CATEGORY_NOT_FOUND);
     }
@@ -48,8 +48,8 @@ export class CategoryService implements ICategoryService {
     };
   }
 
-  async getCategoryById(publicId: string): Promise<Category | null> {
-    const category = await this.findCategoryOrThrow(publicId);
+  async getCategoryById(categoryId: string): Promise<Category | null> {
+    const category = await this.findCategoryOrThrow(categoryId);
     return category;
   }
 
@@ -59,16 +59,16 @@ export class CategoryService implements ICategoryService {
   }
 
   async updateCategory(
-    publicId: string,
+    categoryId: string,
     data: UpdateCategoryDto,
   ): Promise<Category> {
-    const category = await this.findCategoryOrThrow(publicId);
+    const category = await this.findCategoryOrThrow(categoryId);
     Object.assign(category, data);
     return this.categoryRepository.save(category);
   }
 
-  async deleteCategory(publicId: string): Promise<boolean> {
-    const category = await this.findCategoryOrThrow(publicId);
+  async deleteCategory(categoryId: string): Promise<boolean> {
+    const category = await this.findCategoryOrThrow(categoryId);
 
     if (category.products && category.products.length > 0) {
       throw new BadRequestError(ErrorMessages.CATEGORY_HAS_PRODUCTS);

@@ -10,8 +10,8 @@ export class CategoryController {
   };
 
   getCategoryById = async (req: Request, res: Response): Promise<void> => {
-    const publicId = req.params.id;
-    const category = await this.categoryService.getCategoryById(publicId);
+    const categoryId = req.params.categoryId;
+    const category = await this.categoryService.getCategoryById(categoryId);
     res.json(category);
   };
 
@@ -23,18 +23,18 @@ export class CategoryController {
   };
 
   updateCategory = async (req: Request, res: Response): Promise<void> => {
-    const publicId = req.params.id;
+    const categoryId = req.params.categoryId;
     const categoryData = req.body;
     const updatedCategory = await this.categoryService.updateCategory(
-      publicId,
+      categoryId,
       categoryData,
     );
     res.json(updatedCategory);
   };
 
   deleteCategory = async (req: Request, res: Response): Promise<void> => {
-    const publicId = req.params.id;
-    const deleted = await this.categoryService.deleteCategory(publicId);
+    const categoryId = req.params.categoryId;
+    const deleted = await this.categoryService.deleteCategory(categoryId);
     res.status(200).json(deleted);
   };
 }

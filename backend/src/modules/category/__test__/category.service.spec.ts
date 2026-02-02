@@ -24,7 +24,7 @@ describe("CategoryService", () => {
 
         mockCategory = createMockCategory({
             id: 1,
-            publicId: "cat-123",
+            categoryId: "cat-123",
             name: "Electronics",
             description: "Electronic devices and gadgets",
         });
@@ -148,14 +148,14 @@ describe("CategoryService", () => {
     });
 
     describe("getCategoryById", () => {
-        it("should return category by publicId", async () => {
+        it("should return category by categoryId", async () => {
             mockCategoryRepository.findOneBy.mockResolvedValue(mockCategory);
 
             const result = await categoryService.getCategoryById("cat-123");
 
             expect(result).toEqual(mockCategory);
             expect(mockCategoryRepository.findOneBy).toHaveBeenCalledWith({
-                publicId: "cat-123",
+                categoryId: "cat-123",
             });
         });
 
@@ -180,7 +180,7 @@ describe("CategoryService", () => {
 
             const newCategory = createMockCategory({
                 ...createDto,
-                publicId: "cat-456",
+                categoryId: "cat-456",
             });
 
             mockCategoryRepository.create.mockReturnValue(newCategory);
@@ -264,7 +264,7 @@ describe("CategoryService", () => {
     describe("deleteCategory", () => {
         it("should delete category successfully if no products", async () => {
             const categoryWithoutProducts = createMockCategory({
-                publicId: "cat-123",
+                categoryId: "cat-123",
                 products: [],
             });
 
@@ -290,7 +290,7 @@ describe("CategoryService", () => {
         it("should throw BadRequestError if category has products", async () => {
             const product = createMockProduct({ id: 1, name: "Product 1" });
             const categoryWithProducts = createMockCategory({
-                publicId: "cat-123",
+                categoryId: "cat-123",
                 products: [product],
             });
 
@@ -308,7 +308,7 @@ describe("CategoryService", () => {
 
         it("should use soft delete", async () => {
             const category = createMockCategory({
-                publicId: "cat-123",
+                categoryId: "cat-123",
                 products: [],
             });
 

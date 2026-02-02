@@ -67,7 +67,7 @@ describe("CartController", () => {
 
     describe("POST /cart/items", () => {
         it("should return 201 and add item to cart", async () => {
-            const product = createMockProduct({ publicId: "prod-123" });
+            const product = createMockProduct({ productId: "prod-123" });
             const cartItem = createMockCartItem({
                 quantity: 1,
                 product,
@@ -77,7 +77,7 @@ describe("CartController", () => {
 
             const response = await request(app)
                 .post("/cart/items")
-                .send({ publicId: "prod-123", quantity: 1 });
+                .send({ productId: "prod-123", quantity: 1 });
 
             expect(response.status).toBe(201);
             expect(mockCartService.addItemToCart).toHaveBeenCalledWith(
@@ -88,10 +88,9 @@ describe("CartController", () => {
         });
     });
 
-    describe("PUT /cart/items/:publicId", () => {
+    describe("PUT /cart/items/:productId", () => {
         it("should return 200 and update item quantity", async () => {
             const updatedItem = createMockCartItem({
-                publicId: "item-123",
                 quantity: 5,
             });
 

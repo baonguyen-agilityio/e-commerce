@@ -28,9 +28,9 @@ export class OrderController {
 
   getOrderById = async (req: Request, res: Response): Promise<void> => {
     const authContext = getAuthContext(req);
-    const publicId = req.params.orderId;
+    const orderId = req.params.orderId;
     const result = await this.orderService.getOrderById(
-      publicId,
+      orderId,
       authContext.userId,
       authContext.role,
     );

@@ -9,12 +9,12 @@ export interface CartWithTotal extends Cart {
 export interface ICartService {
   getOrCreateCart(clerkId: string): Promise<Cart>;
   getCartByClerkId(clerkId: string): Promise<CartWithTotal>;
-  addItemToCart(clerkId: string, publicId: string, quantity?: number): Promise<CartItem>;
+  addItemToCart(clerkId: string, productId: string, quantity?: number): Promise<CartItem>;
   updateItemQuantity(
     clerkId: string,
-    publicId: string,
+    cartItemId: string,
     quantity: number,
   ): Promise<CartItem>;
-  removeItemFromCart(clerkId: string, publicId: string): Promise<CartWithTotal>;
+  removeItemFromCart(clerkId: string, cartItemId: string): Promise<CartWithTotal>;
   clearCart(clerkId: string): Promise<CartWithTotal>;
 }

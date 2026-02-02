@@ -27,11 +27,7 @@ export class Order {
 
   @Index({ unique: true })
   @Column({ type: "varchar", unique: true })
-  publicId: string;
-
-  @Index()
-  @Column({ type: "int" })
-  userId: number;
+  orderId: string;
 
   @ManyToOne(() => User, (user) => user.orders, { onDelete: "CASCADE" })
   @JoinColumn({ name: "userId" })
@@ -61,9 +57,9 @@ export class Order {
   items: OrderItem[];
 
   @BeforeInsert()
-  generatePublicId() {
-    if (!this.publicId) {
-      this.publicId = randomUUID();
+  generateOrderId() {
+    if (!this.orderId) {
+      this.orderId = randomUUID();
     }
   }
 }

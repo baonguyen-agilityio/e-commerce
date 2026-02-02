@@ -1,3 +1,4 @@
+import { Cart } from "@/modules/cart/entities/Cart";
 import { User, UserRole } from "@/modules/user/entities/User";
 import { faker } from "@faker-js/faker";
 
@@ -8,14 +9,14 @@ export const createMockUser = (overrides?: Partial<User>): User => {
         email: faker.internet.email(),
         name: faker.person.fullName(),
         role: UserRole.CUSTOMER,
-        publicId: faker.string.uuid(),
+        userId: faker.string.uuid(),
         isBanned: false,
         isLocked: false,
         createdAt: new Date(),
         deletedAt: null,
-        cart: {} as any,
+        cart: {} as Cart,
         orders: [],
-        generatePublicId: () => { },
+        generateUserId: () => { },
         banInClerk: async () => { },
         unbanInClerk: async () => { },
         ...overrides,

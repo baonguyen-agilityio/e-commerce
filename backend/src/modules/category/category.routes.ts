@@ -13,7 +13,7 @@ export function createCategoryRoutes(controller: CategoryController): Router {
   const router = Router();
   // public routes
   router.get("/", validate(categoryQuerySchema, "query"), controller.getAllCategories);
-  router.get("/:id", controller.getCategoryById);
+  router.get("/:categoryId", controller.getCategoryById);
 
   // admin routes
   router.post(
@@ -23,13 +23,13 @@ export function createCategoryRoutes(controller: CategoryController): Router {
     controller.createCategory,
   );
   router.put(
-    "/:id",
+    "/:categoryId",
     requireAuth(UserRole.STAFF),
     validate(updateCategorySchema),
     controller.updateCategory,
   );
   router.delete(
-    "/:id",
+    "/:categoryId",
     requireAuth(UserRole.STAFF),
     controller.deleteCategory,
   );

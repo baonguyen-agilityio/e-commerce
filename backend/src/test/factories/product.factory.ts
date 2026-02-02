@@ -1,3 +1,4 @@
+import { Category } from "@/modules/category/entities/Category";
 import { Product } from "@/modules/product/entities/Product";
 import { faker } from "@faker-js/faker";
 
@@ -9,16 +10,15 @@ export const createMockProduct = (overrides?: Partial<Product>): Product => {
         price: parseFloat(faker.commerce.price()),
         stock: faker.number.int({ min: 0, max: 100 }),
         isActive: true,
-        publicId: faker.string.uuid(),
-        categoryId: faker.number.int({ min: 1, max: 10 }),
+        productId: faker.string.uuid(),
         createdAt: new Date(),
         updatedAt: new Date(),
         deletedAt: null,
         imageUrl: faker.image.url(),
-        category: {} as any,
+        category: {} as Category,
         cartItems: [],
         orderItems: [],
-        generatePublicId: () => { },
+        generateProductId: () => { },
         ...overrides,
     };
 };

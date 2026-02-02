@@ -13,29 +13,29 @@ describe("ProductService", () => {
   let productService: ProductService;
   let mockProductRepository: MockRepository<Product>;
 
-  const mockProduct = createMockProduct({ publicId: "prod-1" });
+  const mockProduct = createMockProduct({ productId: "prod-1" });
 
   beforeEach(() => {
     mockProductRepository = createMockRepository<Product>();
     productService = new ProductService(mockProductRepository as any);
   });
 
-  describe("getProductByPublicId", () => {
+  describe("getProductByProductId", () => {
     it("should return product when found", async () => {
       mockProductRepository.findOne.mockResolvedValue(mockProduct);
 
-      const result = await productService.getProductByPublicId("prod-1");
+      const result = await productService.getProductByProductId("prod-1");
 
       expect(result).toEqual(mockProduct);
       expect(mockProductRepository.findOne).toHaveBeenCalledWith(expect.objectContaining({
-        where: { publicId: "prod-1" }
+        where: { productId: "prod-1" }
       }));
     });
 
     it("should throw NotFoundError when product not found", async () => {
       mockProductRepository.findOne.mockResolvedValue(null);
 
-      await expect(productService.getProductByPublicId("missing-999")).rejects.toThrow(
+      await expect(productService.getProductByProductId("missing-999")).rejects.toThrow(
         NotFoundError,
       );
     });
@@ -48,20 +48,20 @@ describe("ProductService", () => {
         description: "New Description",
         price: 49.99,
         stock: 5,
-        categoryPublicId: "cat-1",
+        categoryId: "cat-1",
       };
 
-      const mockCategory = { id: 1, publicId: "cat-1", name: "Test Category" };
+      const mockCategory = { id: 1, categoryId: "cat-1", name: "Test Category" };
 
       mockProductRepository.manager.findOne.mockResolvedValue(mockCategory);
-      mockProductRepository.create.mockReturnValue({ ...createDto, publicId: "prod-2" });
-      mockProductRepository.save.mockResolvedValue({ ...createDto, publicId: "prod-2" });
+      mockProductRepository.create.mockReturnValue({ ...createDto, productId: "prod-2" });
+      mockProductRepository.save.mockResolvedValue({ ...createDto, productId: "prod-2" });
 
       const result = await productService.createProduct(createDto);
 
       expect(mockProductRepository.manager.findOne).toHaveBeenCalledWith(
         "Category",
-        { where: { publicId: "cat-1" } }
+        { where: { categoryId: "cat-1" } }
       );
       expect(mockProductRepository.create).toHaveBeenCalled();
       expect(mockProductRepository.save).toHaveBeenCalled();
@@ -73,10 +73,10 @@ describe("ProductService", () => {
         name: "New Product",
         description: "Desc",
         price: 10,
-        categoryPublicId: "cat-1",
+        categoryId: "cat-1",
       };
 
-      const mockCategory = { id: 1, publicId: "cat-1", name: "Test Category" };
+      const mockCategory = { id: 1, categoryId: "cat-1", name: "Test Category" };
 
       mockProductRepository.manager.findOne.mockResolvedValue(mockCategory);
       mockProductRepository.create.mockImplementation((data) => data);

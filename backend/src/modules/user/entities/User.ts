@@ -47,7 +47,7 @@ export class User {
   id: number;
 
   @Column({ type: "varchar", unique: true })
-  publicId: string;
+  userId: string;
 
   @Column({ type: "varchar", unique: true })
   clerkId: string;
@@ -85,9 +85,9 @@ export class User {
   orders: Order[];
 
   @BeforeInsert()
-  generatePublicId() {
-    if (!this.publicId) {
-      this.publicId = this.clerkId;
+  generateUserId() {
+    if (!this.userId) {
+      this.userId = this.clerkId;
     }
   }
 

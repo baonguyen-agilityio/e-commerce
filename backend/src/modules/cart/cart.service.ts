@@ -48,11 +48,11 @@ export class CartService implements ICartService {
     };
   }
 
-  async addItemToCart(clerkId: string, publicId: string, quantity: number = 1): Promise<CartItem> {
+  async addItemToCart(clerkId: string, productId: string, quantity: number = 1): Promise<CartItem> {
     const cart = await this.getOrCreateCart(clerkId);
 
     const product = await this.productRepository.findOne({
-      where: { publicId },
+      where: { productId },
     });
     if (!product || !product.isActive) {
       throw new NotFoundError(ErrorMessages.PRODUCT_NOT_FOUND_OR_NOT_AVAILABLE);
@@ -63,7 +63,7 @@ export class CartService implements ICartService {
     }
 
     let cartItem = await this.cartItemRepository.findOne({
-      where: { cartId: cart.id, productId: product.id },
+      where: { cart: { id: cart.id }, product: { id: product.id } },
       relations: ["product"],
     });
 
@@ -75,11 +75,11 @@ export class CartService implements ICartService {
       cartItem.quantity = newQuantity;
     } else {
       cartItem = this.cartItemRepository.create({
-        cartId: cart.id,
-        productId: product.id,
+        cart,
+        product,
         quantity,
       });
-      cartItem.product = product;
+
     }
 
     return this.cartItemRepository.save(cartItem);
@@ -87,13 +87,13 @@ export class CartService implements ICartService {
 
   async updateItemQuantity(
     clerkId: string,
-    publicId: string,
+    cartItemId: string,
     quantity: number,
   ): Promise<CartItem> {
     const cart = await this.getOrCreateCart(clerkId);
 
     const cartItem = await this.cartItemRepository.findOne({
-      where: { publicId, cartId: cart.id },
+      where: { cartItemId, cart: { id: cart.id } },
       relations: ["product"],
     });
 
@@ -113,11 +113,11 @@ export class CartService implements ICartService {
     return this.cartItemRepository.save(cartItem);
   }
 
-  async removeItemFromCart(clerkId: string, publicId: string): Promise<CartWithTotal> {
+  async removeItemFromCart(clerkId: string, cartItemId: string): Promise<CartWithTotal> {
     const cart = await this.getOrCreateCart(clerkId);
 
     const cartItem = await this.cartItemRepository.findOne({
-      where: { publicId, cartId: cart.id },
+      where: { cartItemId, cart: { id: cart.id } },
     });
 
     if (!cartItem) {
@@ -132,7 +132,7 @@ export class CartService implements ICartService {
   async clearCart(clerkId: string): Promise<CartWithTotal> {
     const cart = await this.getOrCreateCart(clerkId);
 
-    await this.cartItemRepository.delete({ cartId: cart.id });
+    await this.cartItemRepository.delete({ cart: { id: cart.id } });
 
     return this.getCartByClerkId(clerkId);
   }

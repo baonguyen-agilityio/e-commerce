@@ -64,7 +64,7 @@ describe("OrderService", () => {
 
         mockProduct = createMockProduct({
             id: 1,
-            publicId: "prod-123",
+            productId: "prod-123",
             name: "Test Product",
             price: 50.00,
             stock: 10,
@@ -72,10 +72,10 @@ describe("OrderService", () => {
 
         mockCartItem = createMockCartItem({
             id: 1,
-            cartId: 1,
-            productId: 1,
+            cartItemId: "item-123",
             quantity: 2,
             product: mockProduct,
+            cart: { id: 1 } as any,
         });
 
         mockCart = createMockCart({
@@ -88,8 +88,8 @@ describe("OrderService", () => {
     describe("checkoutOrder", () => {
         it("should create order and process payment successfully", async () => {
             const mockOrder = createMockOrder({
-                publicId: "order-123",
-                userId: 1,
+                orderId: "order-123",
+                user: { id: 1 } as User,
                 total: 100.00,
                 status: OrderStatus.PAID,
                 paymentId: "pi_123",
@@ -215,13 +215,13 @@ describe("OrderService", () => {
 
         it("should rollback stock on payment failure", async () => {
             const mockOrder = createMockOrder({
-                publicId: "order-123",
-                userId: 1,
+                orderId: "order-123",
+                user: { id: 1 } as User,
                 total: 100.00,
                 status: OrderStatus.PENDING_PAYMENT,
                 items: [
                     createMockOrderItem({
-                        productId: 1,
+                        product: { id: 1 } as Product,
                         quantity: 2,
                     }),
                 ],
@@ -315,8 +315,8 @@ describe("OrderService", () => {
 
         it("should deduct stock after successful payment", async () => {
             const mockOrder = createMockOrder({
-                publicId: "order-123",
-                userId: 1,
+                orderId: "order-123",
+                user: { id: 1 } as User,
                 total: 100.00,
             });
 
@@ -355,8 +355,8 @@ describe("OrderService", () => {
 
         it("should clear cart after successful payment", async () => {
             const mockOrder = createMockOrder({
-                publicId: "order-123",
-                userId: 1,
+                orderId: "order-123",
+                user: { id: 1 } as User,
                 total: 100.00,
             });
 
@@ -387,13 +387,13 @@ describe("OrderService", () => {
             await orderService.checkoutOrder("user_123", "pm_123");
 
             expect(mockManager.delete).toHaveBeenCalledWith(CartItem, {
-                cartId: mockCart.id,
+                cart: { id: mockCart.id },
             });
         });
 
         it("should not send email on payment failure", async () => {
             const mockOrder = createMockOrder({
-                publicId: "order-123",
+                orderId: "order-123",
                 items: [createMockOrderItem()],
             });
 
@@ -432,8 +432,8 @@ describe("OrderService", () => {
     describe("getOrdersByUser", () => {
         it("should return paginated orders for user", async () => {
             const orders = [
-                createMockOrder({ userId: 1 }),
-                createMockOrder({ userId: 1 }),
+                createMockOrder({ user: { id: 1 } as User }),
+                createMockOrder({ user: { id: 1 } as User }),
             ];
 
             mockUserRepository.findOneBy.mockResolvedValue(mockUser);
@@ -450,7 +450,7 @@ describe("OrderService", () => {
             expect(result.limit).toBe(10);
             expect(result.totalPages).toBe(1);
             expect(mockOrderRepository.findAndCount).toHaveBeenCalledWith({
-                where: { userId: mockUser.id },
+                where: { user: { id: mockUser.id } },
                 relations: ["items", "items.product"],
                 order: { createdAt: "DESC" },
                 skip: 0,
@@ -489,8 +489,8 @@ describe("OrderService", () => {
     describe("getOrderById", () => {
         it("should return order for authorized user", async () => {
             const mockOrder = createMockOrder({
-                publicId: "order-123",
-                userId: 1,
+                orderId: "order-123",
+                user: { id: 1 } as User,
             });
 
             mockOrderRepository.findOne.mockResolvedValue(mockOrder);
@@ -504,15 +504,15 @@ describe("OrderService", () => {
 
             expect(result).toEqual(mockOrder);
             expect(mockOrderRepository.findOne).toHaveBeenCalledWith({
-                where: { publicId: "order-123" },
+                where: { orderId: "order-123" },
                 relations: ["items", "items.product"],
             });
         });
 
         it("should return order for admin without ownership check", async () => {
             const mockOrder = createMockOrder({
-                publicId: "order-123",
-                userId: 999,
+                orderId: "order-123",
+                user: { id: 999 } as User,
             });
 
             mockOrderRepository.findOne.mockResolvedValue(mockOrder);
@@ -537,8 +537,8 @@ describe("OrderService", () => {
 
         it("should throw ForbiddenError if user not authorized", async () => {
             const mockOrder = createMockOrder({
-                publicId: "order-123",
-                userId: 999,
+                orderId: "order-123",
+                user: { id: 999 } as User,
             });
 
             mockOrderRepository.findOne.mockResolvedValue(mockOrder);

@@ -7,7 +7,7 @@ export interface CreateProductDto {
   price: number;
   stock?: number;
   imageUrl?: string;
-  categoryPublicId: string;
+  categoryId: string;
   isActive?: boolean;
 }
 
@@ -17,7 +17,7 @@ export interface UpdateProductDto {
   price?: number;
   stock?: number;
   imageUrl?: string;
-  categoryPublicId?: string;
+  categoryId?: string;
   isActive?: boolean;
 }
 
@@ -26,7 +26,7 @@ export interface ProductQueryParams {
   limit?: number;
   search?: string;
   category?: string;
-  categoryPublicId?: string;
+  categoryId?: string;
   isActive?: boolean;
   inStock?: boolean;
   minPrice?: number;
@@ -37,8 +37,8 @@ export interface ProductQueryParams {
 
 export interface IProductService {
   getAllProducts(params?: ProductQueryParams): Promise<PaginatedResult<Product>>;
-  getProductByPublicId(publicId: string): Promise<Product | null>;
+  getProductByProductId(productId: string): Promise<Product | null>;
   createProduct(data: CreateProductDto): Promise<any>;
-  updateProduct(publicId: string, data: UpdateProductDto): Promise<Product | null>;
-  deleteProduct(publicId: string): Promise<boolean>;
+  updateProduct(productId: string, data: UpdateProductDto): Promise<Product | null>;
+  deleteProduct(productId: string): Promise<boolean>;
 }

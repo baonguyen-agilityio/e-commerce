@@ -9,7 +9,7 @@ export function createProductRoutes(controller: ProductController): Router {
   const router = Router();
   // public routes
   router.get("/", validate(productQuerySchema, "query"), controller.getAllProducts);
-  router.get("/:publicId", controller.getProductByPublicId);
+  router.get("/:productId", controller.getProductByProductId);
 
   // admin routes
   router.post(
@@ -19,13 +19,13 @@ export function createProductRoutes(controller: ProductController): Router {
     controller.createProduct,
   );
   router.put(
-    "/:publicId",
+    "/:productId",
     requireAuth(UserRole.STAFF),
     validate(updateProductSchema),
     controller.updateProduct,
   );
   router.delete(
-    "/:publicId",
+    "/:productId",
     requireAuth(UserRole.STAFF),
     controller.deleteProduct,
   );

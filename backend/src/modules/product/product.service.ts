@@ -13,9 +13,9 @@ import { ErrorMessages } from "@/shared/errors/messages";
 export class ProductService implements IProductService {
   constructor(private readonly productRepository: Repository<Product>) { }
 
-  private async findProductOrThrow(publicId: string): Promise<Product> {
+  private async findProductOrThrow(productId: string): Promise<Product> {
     const product = await this.productRepository.findOne({
-      where: { publicId },
+      where: { productId },
       relations: ["category"],
     });
     if (!product) {
@@ -30,7 +30,7 @@ export class ProductService implements IProductService {
     const {
       search,
       category,
-      categoryPublicId,
+      categoryId,
       isActive,
       inStock,
       minPrice,
@@ -57,8 +57,8 @@ export class ProductService implements IProductService {
       queryBuilder.andWhere("category.name = :category", { category });
     }
 
-    if (categoryPublicId) {
-      queryBuilder.andWhere("category.publicId = :categoryPublicId", { categoryPublicId });
+    if (categoryId) {
+      queryBuilder.andWhere("category.categoryId = :categoryId", { categoryId });
     }
 
     if (isActive !== undefined) {
@@ -94,16 +94,16 @@ export class ProductService implements IProductService {
     };
   }
 
-  async getProductByPublicId(publicId: string): Promise<Product> {
-    return await this.findProductOrThrow(publicId);
+  async getProductByProductId(productId: string): Promise<Product> {
+    return await this.findProductOrThrow(productId);
   }
 
   async createProduct(data: CreateProductDto): Promise<Product> {
-    const { name, description, price, stock, imageUrl, categoryPublicId, isActive } =
+    const { name, description, price, stock, imageUrl, categoryId, isActive } =
       data;
 
     const category = await this.productRepository.manager.findOne("Category" as any, {
-      where: { publicId: categoryPublicId }
+      where: { categoryId }
     });
 
     if (!category) {
@@ -123,28 +123,28 @@ export class ProductService implements IProductService {
   }
 
   async updateProduct(
-    publicId: string,
+    productId: string,
     data: UpdateProductDto,
   ): Promise<Product | null> {
-    const product = await this.findProductOrThrow(publicId);
+    const product = await this.findProductOrThrow(productId);
 
-    if (data.categoryPublicId) {
+    if (data.categoryId) {
       const category = await this.productRepository.manager.findOne("Category" as any, {
-        where: { publicId: data.categoryPublicId }
+        where: { categoryId: data.categoryId }
       });
       if (!category) {
         throw new NotFoundError(ErrorMessages.CATEGORY_NOT_FOUND || "Category not found");
       }
       product.category = category as any;
-      delete data.categoryPublicId;
+      delete data.categoryId;
     }
 
     Object.assign(product, data);
     return this.productRepository.save(product);
   }
 
-  async deleteProduct(publicId: string): Promise<boolean> {
-    const product = await this.findProductOrThrow(publicId);
+  async deleteProduct(productId: string): Promise<boolean> {
+    const product = await this.findProductOrThrow(productId);
     await this.productRepository.softRemove(product);
     return true;
   }

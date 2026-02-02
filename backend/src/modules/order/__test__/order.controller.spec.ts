@@ -38,7 +38,7 @@ describe("OrderController", () => {
     describe("POST /orders", () => {
         it("should return 200 and checkout result", async () => {
             const order = createMockOrder({
-                publicId: "order-123",
+                orderId: "order-123",
                 status: OrderStatus.PAID,
                 paymentId: "pi_123",
                 total: 100,
@@ -68,8 +68,8 @@ describe("OrderController", () => {
     describe("GET /orders", () => {
         it("should return 200 and paginated orders (admin)", async () => {
             const orders = [
-                createMockOrder({ publicId: "order-1" }),
-                createMockOrder({ publicId: "order-2" }),
+                createMockOrder({ orderId: "order-1" }),
+                createMockOrder({ orderId: "order-2" }),
             ];
 
             const mockResult = {
@@ -117,7 +117,7 @@ describe("OrderController", () => {
     describe("GET /orders/me", () => {
         it("should return 200 and user's orders", async () => {
             const orders = [
-                createMockOrder({ userId: 1, publicId: "order-1" }),
+                createMockOrder({ orderId: "order-1" }),
             ];
 
             const mockResult = {
@@ -146,8 +146,7 @@ describe("OrderController", () => {
     describe("GET /orders/:orderId", () => {
         it("should return 200 and order details", async () => {
             const order = createMockOrder({
-                publicId: "order-123",
-                userId: 1,
+                orderId: "order-123",
                 status: OrderStatus.PAID,
             });
 
@@ -156,7 +155,7 @@ describe("OrderController", () => {
             const response = await request(app).get("/orders/order-123");
 
             expect(response.status).toBe(200);
-            expect(response.body.publicId).toBe("order-123");
+            expect(response.body.orderId).toBe("order-123");
             expect(mockOrderService.getOrderById).toHaveBeenCalledWith(
                 "order-123",
                 "user_123",

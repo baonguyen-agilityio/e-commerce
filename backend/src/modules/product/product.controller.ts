@@ -10,9 +10,9 @@ export class ProductController {
     res.json(result);
   };
 
-  getProductByPublicId = async (req: Request, res: Response) => {
-    const { publicId } = req.params;
-    const product = await this.productService.getProductByPublicId(publicId);
+  getProductByProductId = async (req: Request, res: Response) => {
+    const { productId } = req.params;
+    const product = await this.productService.getProductByProductId(productId);
     res.json(product);
   };
 
@@ -23,18 +23,18 @@ export class ProductController {
   };
 
   updateProduct = async (req: Request, res: Response) => {
-    const { publicId } = req.params;
+    const { productId } = req.params;
     const productData = req.body;
     const updatedProduct = await this.productService.updateProduct(
-      publicId,
+      productId,
       productData,
     );
     res.json(updatedProduct);
   };
 
   deleteProduct = async (req: Request, res: Response) => {
-    const { publicId } = req.params;
-    const deleted = await this.productService.deleteProduct(publicId);
+    const { productId } = req.params;
+    const deleted = await this.productService.deleteProduct(productId);
     res.json(deleted);
   };
 }

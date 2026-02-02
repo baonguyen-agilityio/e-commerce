@@ -79,7 +79,7 @@ describe("CategoryController", () => {
 
     describe("GET /categories/:id", () => {
         it("should return 200 and category by id", async () => {
-            const category = createMockCategory({ publicId: "cat-123", name: "Electronics" });
+            const category = createMockCategory({ categoryId: "cat-123", name: "Electronics" });
             vi.mocked(mockCategoryService.getCategoryById).mockResolvedValue(category);
 
             const response = await request(app).get("/categories/cat-123");
@@ -115,7 +115,7 @@ describe("CategoryController", () => {
     describe("PUT /categories/:id", () => {
         it("should return 200 and updated category", async () => {
             const updatedCategory = createMockCategory({
-                publicId: "cat-123",
+                categoryId: "cat-123",
                 name: "Electronics & Gadgets",
             });
 

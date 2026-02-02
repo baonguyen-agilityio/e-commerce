@@ -1,6 +1,8 @@
 import { Cart } from "@/modules/cart/entities/Cart";
 import { CartItem } from "@/modules/cart/entities/CartItem";
+import { Product } from "@/modules/product/entities/Product";
 import { faker } from "@faker-js/faker";
+import { User } from "@/modules/user/entities/User";
 
 export const createMockCart = (overrides?: Partial<Cart>): Cart => {
     return {
@@ -8,7 +10,7 @@ export const createMockCart = (overrides?: Partial<Cart>): Cart => {
         clerkId: `user_${faker.string.alphanumeric(16)}`,
         items: [],
         updatedAt: new Date(),
-        user: {} as any,
+        user: {} as User,
         ...overrides,
     };
 };
@@ -18,13 +20,11 @@ export const createMockCartItem = (
 ): CartItem => {
     return {
         id: faker.number.int({ min: 1, max: 1000 }),
-        publicId: faker.string.uuid(),
-        cartId: faker.number.int({ min: 1, max: 100 }),
-        productId: faker.number.int({ min: 1, max: 100 }),
+        cartItemId: faker.string.uuid(),
         quantity: faker.number.int({ min: 1, max: 5 }),
-        cart: {} as any,
-        product: {} as any,
-        generatePublicId: () => { },
+        cart: {} as Cart,
+        product: {} as Product,
+        generateCartItemId: () => { },
         ...overrides,
     };
 };
