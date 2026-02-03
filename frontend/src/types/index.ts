@@ -27,7 +27,7 @@ export interface UserQueryParams {
 // Category types
 export interface Category {
   id: number;
-  publicId: string;
+  categoryId: string;
   name: string;
   description: string | null;
 }
@@ -41,13 +41,13 @@ export interface CategoryQueryParams {
 // Product types
 export interface Product {
   id: number;
-  publicId: string;
+  productId: string;
   name: string;
   description: string | null;
   price: number;
   stock: number;
   imageUrl: string | null;
-  categoryPublicId: string;
+  categoryId: string;
   category?: Category;
   isActive: boolean;
   createdAt: string;
@@ -56,7 +56,7 @@ export interface Product {
 export interface ProductQueryParams {
   search?: string;
   category?: string;
-  categoryPublicId?: string;
+  categoryId?: string;
   isActive?: boolean;
   inStock?: boolean;
   minPrice?: number;
@@ -70,7 +70,7 @@ export interface ProductQueryParams {
 // Cart types
 export interface CartItem {
   id: number;
-  publicId: string;
+  cartItemId: string;
   cartId: number;
   productId: number;
   product: Product;
@@ -79,7 +79,6 @@ export interface CartItem {
 
 export interface Cart {
   id: number;
-  userId: number;
   updatedAt: string;
   items: CartItem[];
 }
@@ -96,7 +95,7 @@ export interface OrderItem {
 
 export interface Order {
   id: number;
-  publicId: string;
+  orderId: string;
   userId: number;
   user?: User;
   total: number;

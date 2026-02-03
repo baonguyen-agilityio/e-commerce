@@ -87,7 +87,7 @@ export default function AdminProductsPage() {
       page: pagination.pageIndex + 1,
       limit: pagination.pageSize,
       search: searchTerm || undefined,
-      categoryPublicId:
+      categoryId:
         selectedCategory === "all" ? undefined : selectedCategory,
       isActive: statusFilter === "all" ? undefined : statusFilter === "active",
       inStock: stockFilter === "all" ? undefined : stockFilter === "in_stock",
@@ -129,14 +129,14 @@ export default function AdminProductsPage() {
 
   const handleUpdate = async (data: Partial<Product>) => {
     if (editingProduct) {
-      await updateProduct.mutateAsync({ publicId: editingProduct.publicId, data });
+      await updateProduct.mutateAsync({ productId: editingProduct.productId, data });
       setEditingProduct(null);
     }
   };
 
   const handleDelete = async () => {
     if (deletingProduct) {
-      await deleteProduct.mutateAsync(deletingProduct.publicId);
+      await deleteProduct.mutateAsync(deletingProduct.productId);
       setDeletingProduct(null);
     }
   };
@@ -253,7 +253,7 @@ export default function AdminProductsPage() {
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
-                router.push(`/admin/products/${row.original.publicId}`);
+                router.push(`/admin/products/${row.original.productId}`);
               }}
               className="cursor-pointer focus:bg-secondary focus:text-foreground rounded-lg"
             >
@@ -345,7 +345,7 @@ export default function AdminProductsPage() {
         pageCount={pageCount}
         pagination={pagination}
         onPaginationChange={setPagination}
-        onRowClick={(product) => router.push(`/admin/products/${product.publicId}`)}
+        onRowClick={(product) => router.push(`/admin/products/${product.productId}`)}
         searchKey="name"
         searchPlaceholder="Search products..."
         onSearch={handleSearch}

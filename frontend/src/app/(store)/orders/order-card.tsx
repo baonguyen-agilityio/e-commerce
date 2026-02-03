@@ -52,7 +52,7 @@ export function OrderCard({ order }: OrderCardProps) {
                     <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-3">
                             <span className="font-heading text-xl font-bold text-foreground">
-                                Order #{order.publicId}
+                                Order #{order.orderId}
                             </span>
                             <Badge
                                 variant="outline"
@@ -129,7 +129,7 @@ export function OrderCard({ order }: OrderCardProps) {
 
                     {/* Action Buttons */}
                     <div className="flex items-center gap-2">
-                        <Link href={`/orders/${order.publicId}`}>
+                        <Link href={`/orders/${order.orderId}`}>
                             <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-primary">
                                 <ExternalLink className="h-5 w-5" />
                             </Button>
@@ -200,7 +200,7 @@ export function OrderCard({ order }: OrderCardProps) {
                     </div>
 
                     <div className="pt-4 flex justify-end">
-                        <Link href={`/orders/${order.publicId}`}>
+                        <Link href={`/orders/${order.orderId}`}>
                             <Button className="rounded-xl font-bold">
                                 View Full Receipt <ArrowRight className="ml-2 h-4 w-4" />
                             </Button>

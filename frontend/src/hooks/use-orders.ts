@@ -39,11 +39,11 @@ export function useOrdersByUser(params?: OrderQueryParams, options?: object) {
   };
 }
 
-export function useOrder(publicId: string) {
+export function useOrder(orderId: string) {
   return useQuery({
-    queryKey: ["order", publicId],
-    queryFn: () => api.getOrder(publicId),
-    enabled: !!publicId,
+    queryKey: ["order", orderId],
+    queryFn: () => api.getOrder(orderId),
+    enabled: !!orderId,
   });
 }
 

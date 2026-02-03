@@ -6,18 +6,24 @@ import {
   MockRepository,
 } from "@/test/mocks/repository.mock";
 import { Product } from "../entities/Product";
+import { Category } from "@modules/category/entities/Category";
 import { NotFoundError } from "@/shared/errors";
 import { createMockProduct } from "@/test/factories/product.factory";
 
 describe("ProductService", () => {
   let productService: ProductService;
   let mockProductRepository: MockRepository<Product>;
+  let mockCategoryRepository: MockRepository<Category>;
 
   const mockProduct = createMockProduct({ productId: "prod-1" });
 
   beforeEach(() => {
     mockProductRepository = createMockRepository<Product>();
-    productService = new ProductService(mockProductRepository as any);
+    mockCategoryRepository = createMockRepository<Category>();
+    productService = new ProductService(
+      mockProductRepository as any,
+      mockCategoryRepository as any,
+    );
   });
 
   describe("getProductByProductId", () => {
@@ -53,16 +59,15 @@ describe("ProductService", () => {
 
       const mockCategory = { id: 1, categoryId: "cat-1", name: "Test Category" };
 
-      mockProductRepository.manager.findOne.mockResolvedValue(mockCategory);
+      mockCategoryRepository.findOne.mockResolvedValue(mockCategory as any);
       mockProductRepository.create.mockReturnValue({ ...createDto, productId: "prod-2" });
       mockProductRepository.save.mockResolvedValue({ ...createDto, productId: "prod-2" });
 
       const result = await productService.createProduct(createDto);
 
-      expect(mockProductRepository.manager.findOne).toHaveBeenCalledWith(
-        "Category",
-        { where: { categoryId: "cat-1" } }
-      );
+      expect(mockCategoryRepository.findOne).toHaveBeenCalledWith({
+        where: { categoryId: "cat-1" },
+      });
       expect(mockProductRepository.create).toHaveBeenCalled();
       expect(mockProductRepository.save).toHaveBeenCalled();
       expect(result.name).toBe(createDto.name);
@@ -78,7 +83,7 @@ describe("ProductService", () => {
 
       const mockCategory = { id: 1, categoryId: "cat-1", name: "Test Category" };
 
-      mockProductRepository.manager.findOne.mockResolvedValue(mockCategory);
+      mockCategoryRepository.findOne.mockResolvedValue(mockCategory as any);
       mockProductRepository.create.mockImplementation((data) => data);
       mockProductRepository.save.mockImplementation((data) =>
         Promise.resolve(data),

@@ -25,7 +25,7 @@ interface ProductFormProps {
     price: number;
     stock: number;
     imageUrl?: string;
-    categoryPublicId: string;
+    categoryId: string;
     isActive: boolean;
   }) => void;
   isSubmitting?: boolean;
@@ -42,7 +42,7 @@ export function ProductForm({
   const [price, setPrice] = useState(Number(product?.price) || 0);
   const [stock, setStock] = useState(Number(product?.stock) || 0);
   const [imageUrl, setImageUrl] = useState(product?.imageUrl || "");
-  const [categoryPublicId, setCategoryPublicId] = useState(product?.categoryPublicId || "");
+  const [categoryId, setCategoryId] = useState(product?.categoryId || product?.category?.categoryId || "");
   const [isActive, setIsActive] = useState(product?.isActive ?? true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -51,7 +51,7 @@ export function ProductForm({
     if (!name.trim()) newErrors.name = "Name is required";
     if (price <= 0) newErrors.price = "Price must be positive";
     if (stock < 0) newErrors.stock = "Stock cannot be negative";
-    if (!categoryPublicId) newErrors.categoryId = "Category is required";
+    if (!categoryId) newErrors.categoryId = "Category is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -65,7 +65,7 @@ export function ProductForm({
         price: Number(price),
         stock: Number(stock),
         imageUrl: imageUrl || undefined,
-        categoryPublicId,
+        categoryId,
         isActive,
       });
     }
@@ -146,8 +146,8 @@ export function ProductForm({
           Category
         </Label>
         <Select
-          value={categoryPublicId || undefined}
-          onValueChange={(value) => setCategoryPublicId(value)}
+          value={categoryId || undefined}
+          onValueChange={(value) => setCategoryId(value)}
         >
           <SelectTrigger className="cursor-pointer bg-secondary/20 border-border focus:bg-background focus:border-primary focus:ring-primary/20 rounded-xl">
             <SelectValue placeholder="Select a category" />
@@ -155,8 +155,8 @@ export function ProductForm({
           <SelectContent className="rounded-xl border-border bg-card">
             {categories?.map((category) => (
               <SelectItem
-                key={category.publicId}
-                value={category.publicId}
+                key={category.categoryId}
+                value={category.categoryId}
                 className="cursor-pointer focus:bg-secondary focus:text-foreground rounded-lg"
               >
                 {category.name}

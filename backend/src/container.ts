@@ -27,13 +27,13 @@ export function createContainer(dataSource: DataSource): Container {
   const userService = new UserService(userRepository);
   const userController = new UserController(userService);
 
-  const productRepository = dataSource.getRepository(Product);
-  const productService = new ProductService(productRepository);
-  const productController = new ProductController(productService);
-
   const categoryRepository = dataSource.getRepository(Category);
   const categoryService = new CategoryService(categoryRepository);
   const categoryController = new CategoryController(categoryService);
+
+  const productRepository = dataSource.getRepository(Product);
+  const productService = new ProductService(productRepository, categoryRepository);
+  const productController = new ProductController(productService);
 
   const cartRepository = dataSource.getRepository(Cart);
   const cartItemRepository = dataSource.getRepository(CartItem);
@@ -53,6 +53,8 @@ export function createContainer(dataSource: DataSource): Container {
     orderRepository,
     userRepository,
     cartRepository,
+    cartItemRepository,
+    productRepository,
     paymentGateway,
     emailService,
   );

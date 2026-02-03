@@ -1,5 +1,6 @@
 import { Repository } from "typeorm";
 import { Product } from "./entities/Product";
+import { Category } from "@modules/category/entities/Category";
 import {
   CreateProductDto,
   IProductService,
@@ -11,7 +12,10 @@ import { PaginatedResult } from "@/shared/interfaces/pagination";
 import { ErrorMessages } from "@/shared/errors/messages";
 
 export class ProductService implements IProductService {
-  constructor(private readonly productRepository: Repository<Product>) { }
+  constructor(
+    private readonly productRepository: Repository<Product>,
+    private readonly categoryRepository: Repository<Category>,
+  ) { }
 
   private async findProductOrThrow(productId: string): Promise<Product> {
     const product = await this.productRepository.findOne({
@@ -102,12 +106,14 @@ export class ProductService implements IProductService {
     const { name, description, price, stock, imageUrl, categoryId, isActive } =
       data;
 
-    const category = await this.productRepository.manager.findOne("Category" as any, {
-      where: { categoryId }
+    const category = await this.categoryRepository.findOne({
+      where: { categoryId },
     });
 
     if (!category) {
-      throw new NotFoundError(ErrorMessages.CATEGORY_NOT_FOUND || "Category not found");
+      throw new NotFoundError(
+        ErrorMessages.CATEGORY_NOT_FOUND || "Category not found",
+      );
     }
 
     const product = this.productRepository.create({
@@ -116,7 +122,7 @@ export class ProductService implements IProductService {
       price,
       stock: stock || 0,
       imageUrl,
-      category: category as any,
+      category,
       isActive: isActive !== false,
     });
     return await this.productRepository.save(product);
@@ -129,13 +135,15 @@ export class ProductService implements IProductService {
     const product = await this.findProductOrThrow(productId);
 
     if (data.categoryId) {
-      const category = await this.productRepository.manager.findOne("Category" as any, {
-        where: { categoryId: data.categoryId }
+      const category = await this.categoryRepository.findOne({
+        where: { categoryId: data.categoryId },
       });
       if (!category) {
-        throw new NotFoundError(ErrorMessages.CATEGORY_NOT_FOUND || "Category not found");
+        throw new NotFoundError(
+          ErrorMessages.CATEGORY_NOT_FOUND || "Category not found",
+        );
       }
-      product.category = category as any;
+      product.category = category;
       delete data.categoryId;
     }
 

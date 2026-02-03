@@ -33,7 +33,7 @@ export function ProductCard({ product }: ProductCardProps) {
     }
 
     addToCart.mutate(
-      { publicId: product.publicId, quantity: 1 },
+      { productId: product.productId, quantity: 1 },
       {
         onSuccess: () => {
           setIsAdded(true);
@@ -58,7 +58,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const reviewCount = 128;
 
   return (
-    <Link href={`/products/${product.publicId}`} className="group block">
+    <Link href={`/products/${product.productId}`} className="group block">
       <article className="relative bg-card rounded-3xl overflow-hidden transition-all duration-700 hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-border group-hover:border-primary/30">
         {/* Image Container */}
         <div className="relative aspect-[4/5] overflow-hidden bg-secondary/30">

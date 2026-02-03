@@ -30,11 +30,11 @@ export function CartSheet({ onClose }: CartSheetProps) {
         0
     ) || 0;
 
-    const handleQuantityChange = (publicId: string, newQuantity: number) => {
+    const handleQuantityChange = (cartItemId: string, newQuantity: number) => {
         if (newQuantity < 1) {
-            removeFromCart.mutate(publicId);
+            removeFromCart.mutate(cartItemId);
         } else {
-            updateCartItem.mutate({ publicId, quantity: newQuantity });
+            updateCartItem.mutate({ cartItemId, quantity: newQuantity });
         }
     };
 
@@ -146,7 +146,7 @@ export function CartSheet({ onClose }: CartSheetProps) {
                             <div className="flex-1 min-w-0 flex flex-col justify-center">
                                 <div className="flex items-start justify-between gap-4">
                                     <Link
-                                        href={`/products/${item.product.publicId}`}
+                                        href={`/products/${item.product.productId}`}
                                         onClick={onClose}
                                         className="font-heading text-lg font-bold text-card-foreground line-clamp-2 leading-tight hover:text-primary transition-colors cursor-pointer"
                                     >
@@ -156,7 +156,7 @@ export function CartSheet({ onClose }: CartSheetProps) {
                                         variant="ghost"
                                         size="icon"
                                         className="h-10 w-10 text-muted-foreground hover:text-red-500 hover:bg-red-50 cursor-pointer -mt-1 -mr-1 rounded-xl transition-all"
-                                        onClick={() => removeFromCart.mutate(item.publicId)}
+                                        onClick={() => removeFromCart.mutate(item.cartItemId)}
                                         disabled={removeFromCart.isPending}
                                     >
                                         <Trash2 className="h-5 w-5" />
@@ -174,7 +174,7 @@ export function CartSheet({ onClose }: CartSheetProps) {
                                             variant="ghost"
                                             size="icon"
                                             className="h-8 w-8 cursor-pointer rounded-lg hover:bg-background hover:shadow-sm"
-                                            onClick={() => handleQuantityChange(item.publicId, item.quantity - 1)}
+                                            onClick={() => handleQuantityChange(item.cartItemId, item.quantity - 1)}
                                             disabled={updateCartItem.isPending}
                                         >
                                             <Minus className="h-3 w-3" />
@@ -186,7 +186,7 @@ export function CartSheet({ onClose }: CartSheetProps) {
                                             variant="ghost"
                                             size="icon"
                                             className="h-8 w-8 cursor-pointer rounded-lg hover:bg-background hover:shadow-sm"
-                                            onClick={() => handleQuantityChange(item.publicId, item.quantity + 1)}
+                                            onClick={() => handleQuantityChange(item.cartItemId, item.quantity + 1)}
                                             disabled={updateCartItem.isPending}
                                         >
                                             <Plus className="h-3 w-3" />

@@ -48,7 +48,7 @@ export function ProductFilters({
                 <SelectContent className="rounded-xl border-border">
                     <SelectItem value="all">All Categories</SelectItem>
                     {categories.map((c) => (
-                        <SelectItem key={c.id} value={c.id.toString()}>
+                        <SelectItem key={c.categoryId} value={c.categoryId}>
                             {c.name}
                         </SelectItem>
                     ))}

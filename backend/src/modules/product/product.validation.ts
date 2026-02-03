@@ -25,7 +25,7 @@ export const createProductSchema = z.object({
   price: z.number().min(0, { message: "Price cannot be negative" }),
   stock: z.number().min(0, { message: "Stock level cannot be negative" }).optional(),
   imageUrl: z.string().url({ message: "Please enter a valid image URL" }).optional(),
-  categoryId: z.string().optional(), // TODO: validate categoryId
+  categoryId: z.string().min(1, { message: "Category ID is required" }),
   isActive: z.boolean().optional(),
 });
 

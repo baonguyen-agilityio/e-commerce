@@ -13,11 +13,11 @@ export function useProducts(params?: ProductQueryParams, options?: object) {
   });
 }
 
-export function useProduct(publicId: string) {
+export function useProduct(productId: string) {
   return useQuery<Product>({
-    queryKey: ["product", publicId],
-    queryFn: () => api.getProduct(publicId),
-    enabled: !!publicId,
+    queryKey: ["product", productId],
+    queryFn: () => api.getProduct(productId),
+    enabled: !!productId,
   });
 }
 
@@ -40,11 +40,11 @@ export function useUpdateProduct() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ publicId, data }: { publicId: string; data: Partial<Product> }) =>
-      api.updateProduct(publicId, data),
+    mutationFn: ({ productId, data }: { productId: string; data: Partial<Product> }) =>
+      api.updateProduct(productId, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["product", variables.publicId] });
+      queryClient.invalidateQueries({ queryKey: ["product", variables.productId] });
       toast.success("Product updated successfully");
     },
     onError: (error: Error) => {
@@ -57,10 +57,10 @@ export function useDeleteProduct() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (publicId: string) => api.deleteProduct(publicId),
-    onSuccess: (_, publicId) => {
+    mutationFn: (productId: string) => api.deleteProduct(productId),
+    onSuccess: (_, productId) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["product", publicId] });
+      queryClient.invalidateQueries({ queryKey: ["product", productId] });
       toast.success("Product deleted successfully");
     },
     onError: (error: Error) => {

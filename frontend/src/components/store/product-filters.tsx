@@ -17,7 +17,7 @@ import { formatCurrency } from "@/lib/utils";
 
 interface ProductFiltersProps {
   selectedCategory?: string;
-  onCategoryChange: (categoryPublicId: string | undefined) => void;
+  onCategoryChange: (categoryId: string | undefined) => void;
   priceRange: [number, number];
   onPriceRangeChange: (range: [number, number]) => void;
   inStock: boolean | undefined;
@@ -77,18 +77,18 @@ export function ProductFilters({
               </div>
             ) : (
               <div className="space-y-3 pt-2">
-                {categories?.map((category) => (
-                  <div key={category.publicId} className="flex items-center gap-2 group">
+                {categories?.data?.map((category) => (
+                  <div key={category.categoryId} className="flex items-center gap-2 group">
                     <Checkbox
-                      id={`category-${category.publicId}`}
-                      checked={selectedCategory === category.publicId}
+                      id={`category-${category.categoryId}`}
+                      checked={selectedCategory === category.categoryId}
                       onCheckedChange={(checked) =>
-                        onCategoryChange(checked ? category.publicId : undefined)
+                        onCategoryChange(checked ? category.categoryId : undefined)
                       }
                       className="cursor-pointer border-muted-foreground/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                     />
                     <Label
-                      htmlFor={`category-${category.publicId}`}
+                      htmlFor={`category-${category.categoryId}`}
                       className="text-sm cursor-pointer flex-1 text-muted-foreground group-hover:text-foreground transition-colors"
                     >
                       {category.name}

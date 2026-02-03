@@ -35,7 +35,7 @@ function ProductsContent() {
 
   const { data: productsData, isLoading } = useProducts({
     search: debouncedSearch || undefined,
-    categoryPublicId: selectedCategory,
+    categoryId: selectedCategory,
     isActive: true,
     inStock,
     minPrice: debouncedPriceRange[0] > 0 ? debouncedPriceRange[0] : undefined,

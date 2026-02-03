@@ -14,9 +14,8 @@ import { format } from "date-fns";
 
 function OrderSuccessContent() {
     const searchParams = useSearchParams();
-    const publicId = searchParams.get("orderId") as string;
-
-    const { data: order, isLoading, error } = useOrder(publicId);
+    const orderId = searchParams.get("orderId") as string;
+    const { data: order, isLoading, error } = useOrder(orderId);
 
     // Optimistic loading: Show loading if loading OR if data is undefined and no error
     const showLoading = isLoading || (order === undefined && !error);
@@ -92,7 +91,7 @@ function OrderSuccessContent() {
                                 </CardTitle>
                                 <div className="text-right">
                                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Order ID</p>
-                                    <p className="font-mono text-sm font-bold bg-background px-3 py-1 rounded-lg border border-border">#{order.publicId}</p>
+                                    <p className="font-mono text-sm font-bold bg-background px-3 py-1 rounded-lg border border-border">#{order.orderId}</p>
                                 </div>
                             </div>
                         </CardHeader>

@@ -27,6 +27,8 @@ describe("OrderService", () => {
     let mockOrderRepository: MockRepository<Order>;
     let mockUserRepository: MockRepository<User>;
     let mockCartRepository: MockRepository<Cart>;
+    let mockCartItemRepository: MockRepository<CartItem>;
+    let mockProductRepository: MockRepository<Product>;
     let mockPaymentGateway: IPaymentGateway;
     let mockEmailService: IEmailService;
 
@@ -39,6 +41,8 @@ describe("OrderService", () => {
         mockOrderRepository = createMockRepository<Order>();
         mockUserRepository = createMockRepository<User>();
         mockCartRepository = createMockRepository<Cart>();
+        mockCartItemRepository = createMockRepository<CartItem>();
+        mockProductRepository = createMockRepository<Product>();
 
         mockPaymentGateway = {
             processPayment: vi.fn(),
@@ -52,6 +56,8 @@ describe("OrderService", () => {
             mockOrderRepository as any,
             mockUserRepository as any,
             mockCartRepository as any,
+            mockCartItemRepository as any,
+            mockProductRepository as any,
             mockPaymentGateway,
             mockEmailService
         );
@@ -97,10 +103,10 @@ describe("OrderService", () => {
 
             mockUserRepository.findOneBy.mockResolvedValue(mockUser);
             mockCartRepository.findOne.mockResolvedValue(mockCart);
+            mockProductRepository.findOne.mockResolvedValue(mockProduct);
 
             const mockManager: any = {
                 findOne: vi.fn()
-                    .mockResolvedValueOnce(mockProduct)
                     .mockResolvedValueOnce(mockProduct)
                     .mockResolvedValueOnce(mockOrder),
                 create: vi.fn()
@@ -173,15 +179,14 @@ describe("OrderService", () => {
             mockCartRepository.findOne.mockResolvedValue(mockCart);
 
             const outOfStockProduct = { ...mockProduct, stock: 0 };
-            mockOrderRepository.manager.findOne = vi.fn().mockResolvedValue(outOfStockProduct);
-            mockOrderRepository.manager.delete = vi.fn().mockResolvedValue({});
+            mockProductRepository.findOne.mockResolvedValue(outOfStockProduct);
+            mockCartItemRepository.delete.mockResolvedValue({} as any);
 
             await expect(
                 orderService.checkoutOrder("user_123", "pm_123")
             ).rejects.toThrow("out of stock and has been removed");
 
-            expect(mockOrderRepository.manager.delete).toHaveBeenCalledWith(
-                CartItem,
+            expect(mockCartItemRepository.delete).toHaveBeenCalledWith(
                 mockCartItem.id
             );
         });
@@ -199,16 +204,15 @@ describe("OrderService", () => {
             };
 
             mockCartRepository.findOne.mockResolvedValue(cartWithHighQuantity);
-            mockOrderRepository.manager.findOne = vi.fn().mockResolvedValue(limitedStockProduct);
-            mockOrderRepository.manager.update = vi.fn().mockResolvedValue({});
+            mockProductRepository.findOne.mockResolvedValue(limitedStockProduct);
+            mockCartItemRepository.update.mockResolvedValue({} as any);
 
             await expect(
                 orderService.checkoutOrder("user_123", "pm_123")
             ).rejects.toThrow("Your cart has been updated");
 
-            expect(mockOrderRepository.manager.update).toHaveBeenCalledWith(
-                CartItem,
-                expect.any(Number),
+            expect(mockCartItemRepository.update).toHaveBeenCalledWith(
+                mockCartItem.id,
                 { quantity: 1 }
             );
         });
@@ -229,10 +233,10 @@ describe("OrderService", () => {
 
             mockUserRepository.findOneBy.mockResolvedValue(mockUser);
             mockCartRepository.findOne.mockResolvedValue(mockCart);
+            mockProductRepository.findOne.mockResolvedValue(mockProduct);
 
             const mockManager: any = {
                 findOne: vi.fn()
-                    .mockResolvedValueOnce(mockProduct)
                     .mockResolvedValueOnce(mockProduct)
                     .mockResolvedValueOnce(mockOrder),
                 create: vi.fn()
@@ -281,10 +285,12 @@ describe("OrderService", () => {
                 total: 141.75,
             });
 
+            mockProductRepository.findOne
+                .mockResolvedValueOnce(product1)
+                .mockResolvedValueOnce(product2);
+
             const mockManager: any = {
                 findOne: vi.fn()
-                    .mockResolvedValueOnce(product1)
-                    .mockResolvedValueOnce(product2)
                     .mockResolvedValueOnce(product1)
                     .mockResolvedValueOnce(product2)
                     .mockResolvedValueOnce(mockOrder),
@@ -322,10 +328,10 @@ describe("OrderService", () => {
 
             mockUserRepository.findOneBy.mockResolvedValue(mockUser);
             mockCartRepository.findOne.mockResolvedValue(mockCart);
+            mockProductRepository.findOne.mockResolvedValue(mockProduct);
 
             const mockManager: any = {
                 findOne: vi.fn()
-                    .mockResolvedValueOnce(mockProduct)
                     .mockResolvedValueOnce(mockProduct)
                     .mockResolvedValueOnce(mockOrder),
                 create: vi.fn()
@@ -362,10 +368,10 @@ describe("OrderService", () => {
 
             mockUserRepository.findOneBy.mockResolvedValue(mockUser);
             mockCartRepository.findOne.mockResolvedValue(mockCart);
+            mockProductRepository.findOne.mockResolvedValue(mockProduct);
 
             const mockManager: any = {
                 findOne: vi.fn()
-                    .mockResolvedValueOnce(mockProduct)
                     .mockResolvedValueOnce(mockProduct)
                     .mockResolvedValueOnce(mockOrder),
                 create: vi.fn()
@@ -399,10 +405,10 @@ describe("OrderService", () => {
 
             mockUserRepository.findOneBy.mockResolvedValue(mockUser);
             mockCartRepository.findOne.mockResolvedValue(mockCart);
+            mockProductRepository.findOne.mockResolvedValue(mockProduct);
 
             const mockManager: any = {
                 findOne: vi.fn()
-                    .mockResolvedValueOnce(mockProduct)
                     .mockResolvedValueOnce(mockProduct)
                     .mockResolvedValueOnce(mockOrder),
                 create: vi.fn()

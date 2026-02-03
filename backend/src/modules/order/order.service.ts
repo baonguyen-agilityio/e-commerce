@@ -21,6 +21,8 @@ export class OrderService implements IOrderService {
     private readonly orderRepository: Repository<Order>,
     private readonly userRepository: Repository<User>,
     private readonly cartRepository: Repository<Cart>,
+    private readonly cartItemRepository: Repository<CartItem>,
+    private readonly productRepository: Repository<Product>,
     private readonly paymentGateway: IPaymentGateway,
     private readonly emailService: IEmailService,
   ) { }
@@ -54,7 +56,7 @@ export class OrderService implements IOrderService {
     total = Math.round(total * 100) / 100;
 
     for (const item of cart.items) {
-      const product = await this.orderRepository.manager.findOne(Product, {
+      const product = await this.productRepository.findOne({
         where: { productId: item.product.productId },
       });
 
@@ -62,12 +64,12 @@ export class OrderService implements IOrderService {
         const available = product ? product.stock : 0;
 
         if (available <= 0) {
-          await this.orderRepository.manager.delete(CartItem, item.id);
+          await this.cartItemRepository.delete(item.id);
           throw new BadRequestError(
             `Product ${item.product.name} is out of stock and has been removed from your cart.`,
           );
         } else {
-          await this.orderRepository.manager.update(CartItem, item.id, {
+          await this.cartItemRepository.update(item.id, {
             quantity: available,
           });
           throw new BadRequestError(
