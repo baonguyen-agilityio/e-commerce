@@ -1,5 +1,4 @@
-import { Repository } from "typeorm";
-import { getRoleLevel, User, UserRole, ROLE_HIERARCHY } from "./entities/User";
+import { getRoleLevel, User, UserRole } from "./entities/User";
 import { IUserService, CreateUserDto, ChangeRoleDto } from "./user.interface";
 import {
   BadRequestError,
@@ -9,22 +8,17 @@ import {
 import { clerkClient } from "@clerk/express";
 import { ErrorMessages } from "@/shared/errors/messages";
 import { loggers } from "@shared/utils/logger";
+import { IUserRepository } from "./user.repository";
 
 export class UserService implements IUserService {
-  constructor(private readonly userRepository: Repository<User>) { }
+  constructor(private readonly userRepository: IUserRepository) { }
 
   private async findUserOrThrow(clerkId: string): Promise<User> {
-    const user = await this.userRepository.findOne({ where: { clerkId } });
-    if (!user) {
-      throw new NotFoundError(ErrorMessages.USER_NOT_FOUND);
-    }
-    return user;
+    return this.userRepository.findByClerkIdOrFail(clerkId);
   }
 
   async findOrCreate(data: CreateUserDto): Promise<User> {
-    let user = await this.userRepository.findOne({
-      where: { clerkId: data.clerkId },
-    });
+    let user = await this.userRepository.findByClerkId(data.clerkId);
 
     if (!user) {
       user = this.userRepository.create({
@@ -60,45 +54,7 @@ export class UserService implements IUserService {
     limit: number;
     totalPages: number;
   }> {
-    const page = params.page || 1;
-    const limit = params.limit || 10;
-    const skip = (page - 1) * limit;
-
-    const queryBuilder = this.userRepository
-      .createQueryBuilder("user")
-      .withDeleted();
-
-    const reversedHierarchy = [...ROLE_HIERARCHY].reverse();
-    const caseStatement = reversedHierarchy
-      .map((role, index) => `WHEN user.role = '${role}' THEN ${index + 1}`)
-      .join(" ");
-
-    queryBuilder
-      .addSelect(
-        `CASE ${caseStatement} ELSE ${ROLE_HIERARCHY.length + 1} END`,
-        "role_priority",
-      )
-      .orderBy("role_priority", "ASC")
-      .addOrderBy("user.createdAt", "DESC")
-      .skip(skip)
-      .take(limit);
-
-    if (params.search) {
-      queryBuilder.andWhere(
-        "(user.name ILIKE :search OR user.email ILIKE :search)",
-        { search: `%${params.search}%` },
-      );
-    }
-
-    const [users, total] = await queryBuilder.getManyAndCount();
-
-    return {
-      data: users,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+    return this.userRepository.findAllWithDeleted(params);
   }
 
   async changeRole(changeRoleDto: ChangeRoleDto): Promise<User> {
@@ -150,7 +106,7 @@ export class UserService implements IUserService {
     // Rule 7: If demoting the last admin, prevent it
     if (currentRole === UserRole.ADMIN && newRole !== UserRole.ADMIN) {
       const adminCount = await this.userRepository.count({
-        where: { role: UserRole.ADMIN },
+        role: UserRole.ADMIN,
       });
       if (adminCount <= 1) {
         throw new BadRequestError(ErrorMessages.CANNOT_DEMOTE_LAST_ADMIN);
@@ -171,7 +127,7 @@ export class UserService implements IUserService {
   ): Promise<boolean> {
     const user = await this.findUserOrThrow(clerkId);
     const adminCount = await this.userRepository.count({
-      where: { role: UserRole.ADMIN },
+      role: UserRole.ADMIN,
     });
     if (user.role === UserRole.SUPER_ADMIN) {
       throw new ForbiddenError(ErrorMessages.CANNOT_DELETE_SUPER_ADMIN);

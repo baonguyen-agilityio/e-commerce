@@ -1,9 +1,8 @@
-import { Brackets, Repository } from "typeorm";
+import { Brackets, DataSource } from "typeorm";
 import { Order, OrderStatus } from "./entities/Order";
 import { CheckoutResult, IOrderService, OrderQueryParams } from "./order.interface";
 import { PaginatedResult } from "@/shared/interfaces/pagination";
 import { hasPermission, User, UserRole } from "@modules/user/entities/User";
-import { Cart } from "@modules/cart/entities/Cart";
 import { CartItem } from "@modules/cart/entities/CartItem";
 import { OrderItem } from "./entities/OrderItem";
 import { Product } from "@modules/product/entities/Product";
@@ -16,20 +15,25 @@ import {
 import { ErrorMessages } from "@shared/errors/messages";
 import { IEmailService } from "@shared/interfaces/IEmailService";
 import { loggers } from "@shared/utils/logger";
+import { IOrderRepository } from "./order.repository";
+import { IUserRepository } from "@modules/user/user.repository";
+import { ICartItemRepository, ICartRepository } from "@modules/cart/cart.repository";
+import { IProductRepository } from "@modules/product/product.repository";
 
 export class OrderService implements IOrderService {
   constructor(
-    private readonly orderRepository: Repository<Order>,
-    private readonly userRepository: Repository<User>,
-    private readonly cartRepository: Repository<Cart>,
-    private readonly cartItemRepository: Repository<CartItem>,
-    private readonly productRepository: Repository<Product>,
+    private readonly orderRepository: IOrderRepository,
+    private readonly userRepository: IUserRepository,
+    private readonly cartRepository: ICartRepository,
+    private readonly cartItemRepository: ICartItemRepository,
+    private readonly productRepository: IProductRepository,
     private readonly paymentGateway: IPaymentGateway,
     private readonly emailService: IEmailService,
+    private readonly dataSource: DataSource,
   ) { }
 
   private async findUserOrThrow(clerkId: string): Promise<User> {
-    const user = await this.userRepository.findOneBy({ clerkId });
+    const user = await this.userRepository.findByClerkId(clerkId);
     if (!user) {
       throw new NotFoundError(ErrorMessages.USER_NOT_FOUND);
     }
@@ -45,10 +49,7 @@ export class OrderService implements IOrderService {
     loggers.info('Starting checkout process', { ...logContext, paymentMethodId: '***REDACTED***' });
 
     const user = await this.findUserOrThrow(clerkId);
-    const cart = await this.cartRepository.findOne({
-      where: { clerkId },
-      relations: ["items", "items.product"],
-    });
+    const cart = await this.cartRepository.findByClerkIdWithItems(clerkId);
 
     if (!cart || !cart.items || cart.items.length === 0) {
       loggers.warn('Checkout attempted with empty cart', logContext);
@@ -68,9 +69,7 @@ export class OrderService implements IOrderService {
     });
 
     for (const item of cart.items) {
-      const product = await this.productRepository.findOne({
-        where: { productId: item.product.productId },
-      });
+      const product = await this.productRepository.findByProductId(item.product.productId);
 
       if (!product || product.stock < item.quantity) {
         const available = product ? product.stock : 0;
@@ -103,7 +102,7 @@ export class OrderService implements IOrderService {
       }
     }
 
-    const orderPublicId = await this.orderRepository.manager.transaction(
+    const orderPublicId = await this.dataSource.transaction(
       async (manager) => {
         loggers.debug('Starting order creation transaction', logContext);
 
@@ -173,7 +172,7 @@ export class OrderService implements IOrderService {
       paymentMethodId,
     });
 
-    const finalOrder = await this.orderRepository.manager.transaction(
+    const finalOrder = await this.dataSource.transaction(
       async (manager) => {
         const order = await manager.findOne(Order, {
           where: { orderId: orderPublicId },
@@ -260,25 +259,7 @@ export class OrderService implements IOrderService {
     params: OrderQueryParams = {},
   ): Promise<PaginatedResult<Order>> {
     const user = await this.findUserOrThrow(clerkId);
-    const page = params.page || 1;
-    const limit = params.limit || 10;
-    const skip = (page - 1) * limit;
-
-    const [data, total] = await this.orderRepository.findAndCount({
-      where: { user: { id: user.id } },
-      relations: ["items", "items.product"],
-      order: { createdAt: "DESC" },
-      skip,
-      take: limit,
-    });
-
-    return {
-      data,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+    return this.orderRepository.findByUser(user.id, params);
   }
 
   async getOrderById(
@@ -286,10 +267,7 @@ export class OrderService implements IOrderService {
     clerkId: string,
     role: UserRole,
   ): Promise<Order | null> {
-    const order = await this.orderRepository.findOne({
-      where: { orderId },
-      relations: ["items", "items.product", "user"],
-    });
+    const order = await this.orderRepository.findByOrderId(orderId);
 
     if (!order) {
       throw new NotFoundError(ErrorMessages.ORDER_NOT_FOUND);
@@ -310,37 +288,6 @@ export class OrderService implements IOrderService {
   async getOrders(
     params: OrderQueryParams = {},
   ): Promise<PaginatedResult<Order>> {
-    const page = params.page || 1;
-    const limit = params.limit || 10;
-    const skip = (page - 1) * limit;
-
-    const queryBuilder = this.orderRepository
-      .createQueryBuilder("order")
-      .leftJoinAndSelect("order.items", "items")
-      .leftJoinAndSelect("items.product", "product")
-      .leftJoinAndSelect("order.user", "user")
-      .orderBy("order.createdAt", "DESC")
-      .skip(skip)
-      .take(limit);
-
-    if (params.search) {
-      queryBuilder.andWhere(
-        new Brackets((qb) => {
-          qb.where("order.orderId ILIKE :search", { search: `%${params.search}%` })
-            .orWhere("user.name ILIKE :search", { search: `%${params.search}%` })
-            .orWhere("user.email ILIKE :search", { search: `%${params.search}%` });
-        }),
-      );
-    }
-
-    const [data, total] = await queryBuilder.getManyAndCount();
-
-    return {
-      data,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+    return this.orderRepository.findAll(params);
   }
 }

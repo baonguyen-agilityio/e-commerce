@@ -21,16 +21,19 @@ import { createMockOrder, createMockOrderItem } from "@/test/factories/order.fac
 import { createMockUser } from "@/test/factories/user.factory";
 import { createMockCart, createMockCartItem } from "@/test/factories/cart.factory";
 import { createMockProduct } from "@/test/factories/product.factory";
+import { DataSource } from "typeorm";
 
 describe("OrderService", () => {
     let orderService: OrderService;
-    let mockOrderRepository: MockRepository<Order>;
-    let mockUserRepository: MockRepository<User>;
-    let mockCartRepository: MockRepository<Cart>;
-    let mockCartItemRepository: MockRepository<CartItem>;
-    let mockProductRepository: MockRepository<Product>;
+    let mockOrderRepository: any;
+    let mockUserRepository: any;
+    let mockCartRepository: any;
+    let mockCartItemRepository: any;
+    let mockProductRepository: any;
     let mockPaymentGateway: IPaymentGateway;
     let mockEmailService: IEmailService;
+    let mockDataSource: any;
+    let mockManager: any;
 
     let mockUser: User;
     let mockCart: Cart;
@@ -38,11 +41,33 @@ describe("OrderService", () => {
     let mockCartItem: CartItem;
 
     beforeEach(() => {
-        mockOrderRepository = createMockRepository<Order>();
-        mockUserRepository = createMockRepository<User>();
-        mockCartRepository = createMockRepository<Cart>();
-        mockCartItemRepository = createMockRepository<CartItem>();
-        mockProductRepository = createMockRepository<Product>();
+        // Mock repositories with specific domain methods
+        mockOrderRepository = {
+            ...createMockRepository<Order>(),
+            findByOrderId: vi.fn(),
+            findByUser: vi.fn(),
+            findAll: vi.fn(),
+        };
+        mockUserRepository = {
+            ...createMockRepository<User>(),
+            findByClerkId: vi.fn(),
+        };
+        mockCartRepository = {
+            ...createMockRepository<Cart>(),
+            findByClerkIdWithItems: vi.fn(),
+        };
+        mockCartItemRepository = {
+            ...createMockRepository<CartItem>(),
+            findByCartAndProduct: vi.fn(),
+            findAllByCart: vi.fn(),
+            deleteByCart: vi.fn(),
+            findByCartItemIdAndCartId: vi.fn(),
+            deleteById: vi.fn(),
+        };
+        mockProductRepository = {
+            ...createMockRepository<Product>(),
+            findByProductId: vi.fn(),
+        };
 
         mockPaymentGateway = {
             processPayment: vi.fn(),
@@ -52,14 +77,27 @@ describe("OrderService", () => {
             sendOrderConfirmation: vi.fn().mockResolvedValue(undefined),
         };
 
+        mockManager = {
+            findOne: vi.fn(),
+            create: vi.fn(),
+            save: vi.fn(),
+            update: vi.fn(),
+            delete: vi.fn(),
+        };
+
+        mockDataSource = {
+            transaction: vi.fn(async (callback) => await callback(mockManager)),
+        };
+
         orderService = new OrderService(
-            mockOrderRepository as any,
-            mockUserRepository as any,
-            mockCartRepository as any,
-            mockCartItemRepository as any,
-            mockProductRepository as any,
+            mockOrderRepository,
+            mockUserRepository,
+            mockCartRepository,
+            mockCartItemRepository,
+            mockProductRepository,
             mockPaymentGateway,
-            mockEmailService
+            mockEmailService,
+            mockDataSource
         );
 
         mockUser = createMockUser({
@@ -101,24 +139,20 @@ describe("OrderService", () => {
                 paymentId: "pi_123",
             });
 
-            mockUserRepository.findOneBy.mockResolvedValue(mockUser);
-            mockCartRepository.findOne.mockResolvedValue(mockCart);
-            mockProductRepository.findOne.mockResolvedValue(mockProduct);
+            mockUserRepository.findByClerkId.mockResolvedValue(mockUser);
+            mockCartRepository.findByClerkIdWithItems.mockResolvedValue(mockCart);
+            mockProductRepository.findByProductId.mockResolvedValue(mockProduct);
 
-            const mockManager: any = {
-                findOne: vi.fn()
-                    .mockResolvedValueOnce(mockProduct)
-                    .mockResolvedValueOnce(mockOrder),
-                create: vi.fn()
-                    .mockReturnValueOnce(mockOrder)
-                    .mockReturnValue({}),
-                save: vi.fn().mockResolvedValue(mockOrder),
-                update: vi.fn().mockResolvedValue({}),
-                delete: vi.fn().mockResolvedValue({}),
-            };
-            mockManager.transaction = vi.fn(async (callback) => await callback(mockManager));
-
-            mockOrderRepository.manager = mockManager as any;
+            // Mock manager behavior inside transaction
+            mockManager.findOne
+                .mockResolvedValueOnce(mockProduct) // Check stock
+                .mockResolvedValueOnce(mockOrder); // Final order retrieval
+            mockManager.create
+                .mockReturnValueOnce(mockOrder) // Create order
+                .mockReturnValue({}); // Create order items
+            mockManager.save.mockResolvedValue(mockOrder);
+            mockManager.update.mockResolvedValue({});
+            mockManager.delete.mockResolvedValue({});
 
             mockPaymentGateway.processPayment = vi.fn().mockResolvedValue({
                 success: true,
@@ -143,7 +177,7 @@ describe("OrderService", () => {
         });
 
         it("should throw error if user not found", async () => {
-            mockUserRepository.findOneBy.mockResolvedValue(null);
+            mockUserRepository.findByClerkId.mockResolvedValue(null);
 
             await expect(
                 orderService.checkoutOrder("invalid_user", "pm_123")
@@ -151,8 +185,8 @@ describe("OrderService", () => {
         });
 
         it("should throw error if cart is empty", async () => {
-            mockUserRepository.findOneBy.mockResolvedValue(mockUser);
-            mockCartRepository.findOne.mockResolvedValue({
+            mockUserRepository.findByClerkId.mockResolvedValue(mockUser);
+            mockCartRepository.findByClerkIdWithItems.mockResolvedValue({
                 ...mockCart,
                 items: [],
             });
@@ -166,8 +200,8 @@ describe("OrderService", () => {
         });
 
         it("should throw error if cart doesn't exist", async () => {
-            mockUserRepository.findOneBy.mockResolvedValue(mockUser);
-            mockCartRepository.findOne.mockResolvedValue(null);
+            mockUserRepository.findByClerkId.mockResolvedValue(mockUser);
+            mockCartRepository.findByClerkIdWithItems.mockResolvedValue(null);
 
             await expect(
                 orderService.checkoutOrder("user_123", "pm_123")
@@ -175,11 +209,11 @@ describe("OrderService", () => {
         });
 
         it("should remove cart item if product out of stock", async () => {
-            mockUserRepository.findOneBy.mockResolvedValue(mockUser);
-            mockCartRepository.findOne.mockResolvedValue(mockCart);
+            mockUserRepository.findByClerkId.mockResolvedValue(mockUser);
+            mockCartRepository.findByClerkIdWithItems.mockResolvedValue(mockCart);
 
             const outOfStockProduct = { ...mockProduct, stock: 0 };
-            mockProductRepository.findOne.mockResolvedValue(outOfStockProduct);
+            mockProductRepository.findByProductId.mockResolvedValue(outOfStockProduct);
             mockCartItemRepository.delete.mockResolvedValue({} as any);
 
             await expect(
@@ -192,7 +226,7 @@ describe("OrderService", () => {
         });
 
         it("should update cart item if requested quantity exceeds stock", async () => {
-            mockUserRepository.findOneBy.mockResolvedValue(mockUser);
+            mockUserRepository.findByClerkId.mockResolvedValue(mockUser);
 
             const limitedStockProduct = { ...mockProduct, stock: 1 };
             const cartWithHighQuantity = {
@@ -203,8 +237,8 @@ describe("OrderService", () => {
                 }]
             };
 
-            mockCartRepository.findOne.mockResolvedValue(cartWithHighQuantity);
-            mockProductRepository.findOne.mockResolvedValue(limitedStockProduct);
+            mockCartRepository.findByClerkIdWithItems.mockResolvedValue(cartWithHighQuantity);
+            mockProductRepository.findByProductId.mockResolvedValue(limitedStockProduct);
             mockCartItemRepository.update.mockResolvedValue({} as any);
 
             await expect(
@@ -231,24 +265,17 @@ describe("OrderService", () => {
                 ],
             });
 
-            mockUserRepository.findOneBy.mockResolvedValue(mockUser);
-            mockCartRepository.findOne.mockResolvedValue(mockCart);
-            mockProductRepository.findOne.mockResolvedValue(mockProduct);
+            mockUserRepository.findByClerkId.mockResolvedValue(mockUser);
+            mockCartRepository.findByClerkIdWithItems.mockResolvedValue(mockCart);
+            mockProductRepository.findByProductId.mockResolvedValue(mockProduct);
 
-            const mockManager: any = {
-                findOne: vi.fn()
-                    .mockResolvedValueOnce(mockProduct)
-                    .mockResolvedValueOnce(mockOrder),
-                create: vi.fn()
-                    .mockReturnValueOnce(mockOrder)
-                    .mockReturnValue({}),
-                save: vi.fn().mockResolvedValue(mockOrder),
-                update: vi.fn().mockResolvedValue({}),
-                delete: vi.fn().mockResolvedValue({}),
-            };
-            mockManager.transaction = vi.fn(async (callback) => await callback(mockManager));
-
-            mockOrderRepository.manager = mockManager as any;
+            mockManager.findOne
+                .mockResolvedValueOnce(mockProduct)
+                .mockResolvedValueOnce(mockOrder);
+            mockManager.create
+                .mockReturnValueOnce(mockOrder)
+                .mockReturnValue({});
+            mockManager.save.mockResolvedValue(mockOrder);
 
             mockPaymentGateway.processPayment = vi.fn().mockResolvedValue({
                 success: false,
@@ -278,32 +305,19 @@ describe("OrderService", () => {
                 ],
             });
 
-            mockUserRepository.findOneBy.mockResolvedValue(mockUser);
-            mockCartRepository.findOne.mockResolvedValue(cart);
-
-            const mockOrder = createMockOrder({
-                total: 141.75,
-            });
-
-            mockProductRepository.findOne
+            mockUserRepository.findByClerkId.mockResolvedValue(mockUser);
+            mockCartRepository.findByClerkIdWithItems.mockResolvedValue(cart);
+            mockProductRepository.findByProductId
                 .mockResolvedValueOnce(product1)
                 .mockResolvedValueOnce(product2);
 
-            const mockManager: any = {
-                findOne: vi.fn()
-                    .mockResolvedValueOnce(product1)
-                    .mockResolvedValueOnce(product2)
-                    .mockResolvedValueOnce(mockOrder),
-                create: vi.fn()
-                    .mockReturnValueOnce(mockOrder)
-                    .mockReturnValue({}),
-                save: vi.fn().mockResolvedValue(mockOrder),
-                update: vi.fn().mockResolvedValue({}),
-                delete: vi.fn().mockResolvedValue({}),
-            };
-            mockManager.transaction = vi.fn(async (callback) => await callback(mockManager));
+            const mockOrder = createMockOrder({ total: 141.75 });
 
-            mockOrderRepository.manager = mockManager as any;
+            mockManager.findOne
+                .mockResolvedValueOnce(product1)
+                .mockResolvedValueOnce(product2)
+                .mockResolvedValueOnce(mockOrder);
+            mockManager.create.mockReturnValue(mockOrder);
 
             mockPaymentGateway.processPayment = vi.fn().mockResolvedValue({
                 success: true,
@@ -320,30 +334,15 @@ describe("OrderService", () => {
         });
 
         it("should deduct stock after successful payment", async () => {
-            const mockOrder = createMockOrder({
-                orderId: "order-123",
-                user: { id: 1 } as User,
-                total: 100.00,
-            });
+            const mockOrder = createMockOrder();
+            mockUserRepository.findByClerkId.mockResolvedValue(mockUser);
+            mockCartRepository.findByClerkIdWithItems.mockResolvedValue(mockCart);
+            mockProductRepository.findByProductId.mockResolvedValue(mockProduct);
 
-            mockUserRepository.findOneBy.mockResolvedValue(mockUser);
-            mockCartRepository.findOne.mockResolvedValue(mockCart);
-            mockProductRepository.findOne.mockResolvedValue(mockProduct);
-
-            const mockManager: any = {
-                findOne: vi.fn()
-                    .mockResolvedValueOnce(mockProduct)
-                    .mockResolvedValueOnce(mockOrder),
-                create: vi.fn()
-                    .mockReturnValueOnce(mockOrder)
-                    .mockReturnValue({}),
-                save: vi.fn().mockResolvedValue(mockOrder),
-                update: vi.fn().mockResolvedValue({}),
-                delete: vi.fn().mockResolvedValue({}),
-            };
-            mockManager.transaction = vi.fn(async (callback) => await callback(mockManager));
-
-            mockOrderRepository.manager = mockManager as any;
+            mockManager.findOne
+                .mockResolvedValueOnce(mockProduct)
+                .mockResolvedValueOnce(mockOrder);
+            mockManager.create.mockReturnValue(mockOrder);
 
             mockPaymentGateway.processPayment = vi.fn().mockResolvedValue({
                 success: true,
@@ -360,30 +359,15 @@ describe("OrderService", () => {
         });
 
         it("should clear cart after successful payment", async () => {
-            const mockOrder = createMockOrder({
-                orderId: "order-123",
-                user: { id: 1 } as User,
-                total: 100.00,
-            });
+            const mockOrder = createMockOrder();
+            mockUserRepository.findByClerkId.mockResolvedValue(mockUser);
+            mockCartRepository.findByClerkIdWithItems.mockResolvedValue(mockCart);
+            mockProductRepository.findByProductId.mockResolvedValue(mockProduct);
 
-            mockUserRepository.findOneBy.mockResolvedValue(mockUser);
-            mockCartRepository.findOne.mockResolvedValue(mockCart);
-            mockProductRepository.findOne.mockResolvedValue(mockProduct);
-
-            const mockManager: any = {
-                findOne: vi.fn()
-                    .mockResolvedValueOnce(mockProduct)
-                    .mockResolvedValueOnce(mockOrder),
-                create: vi.fn()
-                    .mockReturnValueOnce(mockOrder)
-                    .mockReturnValue({}),
-                save: vi.fn().mockResolvedValue(mockOrder),
-                update: vi.fn().mockResolvedValue({}),
-                delete: vi.fn().mockResolvedValue({}),
-            };
-            mockManager.transaction = vi.fn(async (callback) => await callback(mockManager));
-
-            mockOrderRepository.manager = mockManager as any;
+            mockManager.findOne
+                .mockResolvedValueOnce(mockProduct)
+                .mockResolvedValueOnce(mockOrder);
+            mockManager.create.mockReturnValue(mockOrder);
 
             mockPaymentGateway.processPayment = vi.fn().mockResolvedValue({
                 success: true,
@@ -398,29 +382,16 @@ describe("OrderService", () => {
         });
 
         it("should not send email on payment failure", async () => {
-            const mockOrder = createMockOrder({
-                orderId: "order-123",
-                items: [createMockOrderItem()],
-            });
+            const mockOrder = createMockOrder();
+            mockUserRepository.findByClerkId.mockResolvedValue(mockUser);
+            mockCartRepository.findByClerkIdWithItems.mockResolvedValue(mockCart);
+            mockProductRepository.findByProductId.mockResolvedValue(mockProduct);
 
-            mockUserRepository.findOneBy.mockResolvedValue(mockUser);
-            mockCartRepository.findOne.mockResolvedValue(mockCart);
-            mockProductRepository.findOne.mockResolvedValue(mockProduct);
-
-            const mockManager: any = {
-                findOne: vi.fn()
-                    .mockResolvedValueOnce(mockProduct)
-                    .mockResolvedValueOnce(mockOrder),
-                create: vi.fn()
-                    .mockReturnValueOnce(mockOrder)
-                    .mockReturnValue({}),
-                save: vi.fn().mockResolvedValue(mockOrder),
-                update: vi.fn().mockResolvedValue({}),
-                delete: vi.fn(),
-            };
-            mockManager.transaction = vi.fn(async (callback) => await callback(mockManager));
-
-            mockOrderRepository.manager = mockManager as any;
+            mockManager.findOne
+                .mockResolvedValueOnce(mockProduct)
+                .mockResolvedValueOnce(mockOrder);
+            mockManager.create.mockReturnValue(mockOrder);
+            mockManager.delete = vi.fn();
 
             mockPaymentGateway.processPayment = vi.fn().mockResolvedValue({
                 success: false,
@@ -442,8 +413,14 @@ describe("OrderService", () => {
                 createMockOrder({ user: { id: 1 } as User }),
             ];
 
-            mockUserRepository.findOneBy.mockResolvedValue(mockUser);
-            mockOrderRepository.findAndCount.mockResolvedValue([orders, 2]);
+            mockUserRepository.findByClerkId.mockResolvedValue(mockUser);
+            mockOrderRepository.findByUser.mockResolvedValue({
+                data: orders,
+                total: 2,
+                page: 1,
+                limit: 10,
+                totalPages: 1
+            });
 
             const result = await orderService.getOrdersByUser("user_123", {
                 page: 1,
@@ -452,43 +429,18 @@ describe("OrderService", () => {
 
             expect(result.data).toHaveLength(2);
             expect(result.total).toBe(2);
-            expect(result.page).toBe(1);
-            expect(result.limit).toBe(10);
-            expect(result.totalPages).toBe(1);
-            expect(mockOrderRepository.findAndCount).toHaveBeenCalledWith({
-                where: { user: { id: mockUser.id } },
-                relations: ["items", "items.product"],
-                order: { createdAt: "DESC" },
-                skip: 0,
-                take: 10,
+            expect(mockOrderRepository.findByUser).toHaveBeenCalledWith(mockUser.id, {
+                page: 1,
+                limit: 10
             });
         });
 
         it("should throw error if user not found", async () => {
-            mockUserRepository.findOneBy.mockResolvedValue(null);
+            mockUserRepository.findByClerkId.mockResolvedValue(null);
 
             await expect(
                 orderService.getOrdersByUser("invalid_user")
             ).rejects.toThrow(NotFoundError);
-        });
-
-        it("should paginate correctly", async () => {
-            mockUserRepository.findOneBy.mockResolvedValue(mockUser);
-            mockOrderRepository.findAndCount.mockResolvedValue([[], 25]);
-
-            const result = await orderService.getOrdersByUser("user_123", {
-                page: 2,
-                limit: 10,
-            });
-
-            expect(result.page).toBe(2);
-            expect(result.totalPages).toBe(3);
-            expect(mockOrderRepository.findAndCount).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    skip: 10,
-                    take: 10,
-                })
-            );
         });
     });
 
@@ -499,8 +451,8 @@ describe("OrderService", () => {
                 user: { id: 1 } as User,
             });
 
-            mockOrderRepository.findOne.mockResolvedValue(mockOrder);
-            mockUserRepository.findOneBy.mockResolvedValue(mockUser);
+            mockOrderRepository.findByOrderId.mockResolvedValue(mockOrder);
+            mockUserRepository.findByClerkId.mockResolvedValue(mockUser);
 
             const result = await orderService.getOrderById(
                 "order-123",
@@ -509,10 +461,7 @@ describe("OrderService", () => {
             );
 
             expect(result).toEqual(mockOrder);
-            expect(mockOrderRepository.findOne).toHaveBeenCalledWith({
-                where: { orderId: "order-123" },
-                relations: ["items", "items.product"],
-            });
+            expect(mockOrderRepository.findByOrderId).toHaveBeenCalledWith("order-123");
         });
 
         it("should return order for admin without ownership check", async () => {
@@ -521,7 +470,7 @@ describe("OrderService", () => {
                 user: { id: 999 } as User,
             });
 
-            mockOrderRepository.findOne.mockResolvedValue(mockOrder);
+            mockOrderRepository.findByOrderId.mockResolvedValue(mockOrder);
 
             const result = await orderService.getOrderById(
                 "order-123",
@@ -530,11 +479,11 @@ describe("OrderService", () => {
             );
 
             expect(result).toEqual(mockOrder);
-            expect(mockUserRepository.findOneBy).not.toHaveBeenCalled();
+            expect(mockUserRepository.findByClerkId).not.toHaveBeenCalled();
         });
 
         it("should throw error if order not found", async () => {
-            mockOrderRepository.findOne.mockResolvedValue(null);
+            mockOrderRepository.findByOrderId.mockResolvedValue(null);
 
             await expect(
                 orderService.getOrderById("missing-order", "user_123", UserRole.CUSTOMER)
@@ -547,8 +496,8 @@ describe("OrderService", () => {
                 user: { id: 999 } as User,
             });
 
-            mockOrderRepository.findOne.mockResolvedValue(mockOrder);
-            mockUserRepository.findOneBy.mockResolvedValue(mockUser);
+            mockOrderRepository.findByOrderId.mockResolvedValue(mockOrder);
+            mockUserRepository.findByClerkId.mockResolvedValue(mockUser);
 
             await expect(
                 orderService.getOrderById("order-123", "user_123", UserRole.CUSTOMER)
@@ -563,56 +512,40 @@ describe("OrderService", () => {
                 createMockOrder(),
             ];
 
-            const mockQueryBuilder = {
-                leftJoinAndSelect: vi.fn().mockReturnThis(),
-                orderBy: vi.fn().mockReturnThis(),
-                skip: vi.fn().mockReturnThis(),
-                take: vi.fn().mockReturnThis(),
-                andWhere: vi.fn().mockReturnThis(),
-                getManyAndCount: vi.fn().mockResolvedValue([orders, 2]),
-            };
-
-            mockOrderRepository.createQueryBuilder.mockReturnValue(
-                mockQueryBuilder as any
-            );
+            mockOrderRepository.findAll.mockResolvedValue({
+                data: orders,
+                total: 2,
+                page: 1,
+                limit: 10,
+                totalPages: 1
+            });
 
             const result = await orderService.getOrders({ page: 1, limit: 10 });
 
             expect(result.data).toHaveLength(2);
             expect(result.total).toBe(2);
-            expect(result.page).toBe(1);
-            expect(result.limit).toBe(10);
-            expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
-                "order.items",
-                "items"
-            );
-            expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
-                "items.product",
-                "product"
-            );
-            expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
-                "order.user",
-                "user"
-            );
+            expect(mockOrderRepository.findAll).toHaveBeenCalledWith({
+                page: 1,
+                limit: 10
+            });
         });
 
         it("should filter by search term", async () => {
-            const mockQueryBuilder = {
-                leftJoinAndSelect: vi.fn().mockReturnThis(),
-                orderBy: vi.fn().mockReturnThis(),
-                skip: vi.fn().mockReturnThis(),
-                take: vi.fn().mockReturnThis(),
-                andWhere: vi.fn().mockReturnThis(),
-                getManyAndCount: vi.fn().mockResolvedValue([[], 0]),
-            };
-
-            mockOrderRepository.createQueryBuilder.mockReturnValue(
-                mockQueryBuilder as any
-            );
+            mockOrderRepository.findAll.mockResolvedValue({
+                data: [],
+                total: 0,
+                page: 1,
+                limit: 10,
+                totalPages: 0
+            });
 
             await orderService.getOrders({ search: "test", page: 1, limit: 10 });
 
-            expect(mockQueryBuilder.andWhere).toHaveBeenCalled();
+            expect(mockOrderRepository.findAll).toHaveBeenCalledWith({
+                search: "test",
+                page: 1,
+                limit: 10
+            });
         });
     });
 });

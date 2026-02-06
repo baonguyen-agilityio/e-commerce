@@ -1,4 +1,3 @@
-import { Repository } from "typeorm";
 import { Product } from "./entities/Product";
 import { Category } from "@modules/category/entities/Category";
 import {
@@ -10,111 +9,30 @@ import {
 import { NotFoundError } from "@/shared/errors";
 import { PaginatedResult } from "@/shared/interfaces/pagination";
 import { ErrorMessages } from "@/shared/errors/messages";
+import { IProductRepository } from "./product.repository";
+import { ICategoryRepository } from "@modules/category/category.repository";
 
 export class ProductService implements IProductService {
   constructor(
-    private readonly productRepository: Repository<Product>,
-    private readonly categoryRepository: Repository<Category>,
+    private readonly productRepository: IProductRepository,
+    private readonly categoryRepository: ICategoryRepository,
   ) { }
-
-  private async findProductOrThrow(productId: string): Promise<Product> {
-    const product = await this.productRepository.findOne({
-      where: { productId },
-      relations: ["category"],
-    });
-    if (!product) {
-      throw new NotFoundError(ErrorMessages.PRODUCT_NOT_FOUND);
-    }
-    return product;
-  }
 
   async getAllProducts(
     params: ProductQueryParams,
   ): Promise<PaginatedResult<Product>> {
-    const {
-      search,
-      category,
-      categoryId,
-      isActive,
-      inStock,
-      minPrice,
-      maxPrice,
-      sort = "createdAt",
-      order = "DESC",
-      page = 1,
-      limit = 10,
-    } = params;
-    const queryBuilder = this.productRepository
-      .createQueryBuilder("product")
-      .leftJoinAndSelect("product.category", "category");
-
-    if (search) {
-      queryBuilder.andWhere(
-        "(product.name ILIKE :search OR product.description ILIKE :search)",
-        {
-          search: `%${search}%`,
-        },
-      );
-    }
-
-    if (category) {
-      queryBuilder.andWhere("category.name = :category", { category });
-    }
-
-    if (categoryId) {
-      queryBuilder.andWhere("category.categoryId = :categoryId", { categoryId });
-    }
-
-    if (isActive !== undefined) {
-      queryBuilder.andWhere("product.isActive = :isActive", { isActive });
-    }
-
-    if (inStock === true) {
-      queryBuilder.andWhere("product.stock > 0");
-    } else if (inStock === false) {
-      queryBuilder.andWhere("product.stock = 0");
-    }
-
-    if (minPrice !== undefined) {
-      queryBuilder.andWhere("product.price >= :minPrice", { minPrice });
-    }
-    if (maxPrice !== undefined) {
-      queryBuilder.andWhere("product.price <= :maxPrice", { maxPrice });
-    }
-
-    queryBuilder.orderBy(`product.${sort}`, order);
-
-    const skip = (page - 1) * limit;
-    queryBuilder.skip(skip).take(limit);
-
-    const [data, total] = await queryBuilder.getManyAndCount();
-
-    return {
-      data,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+    return this.productRepository.findAllWithFilters(params);
   }
 
   async getProductByProductId(productId: string): Promise<Product> {
-    return await this.findProductOrThrow(productId);
+    return await this.productRepository.findByProductIdOrFail(productId);
   }
 
   async createProduct(data: CreateProductDto): Promise<Product> {
     const { name, description, price, stock, imageUrl, categoryId, isActive } =
       data;
 
-    const category = await this.categoryRepository.findOne({
-      where: { categoryId },
-    });
-
-    if (!category) {
-      throw new NotFoundError(
-        ErrorMessages.CATEGORY_NOT_FOUND || "Category not found",
-      );
-    }
+    const category = await this.categoryRepository.findByCategoryIdOrFail(categoryId);
 
     const product = this.productRepository.create({
       name,
@@ -132,17 +50,10 @@ export class ProductService implements IProductService {
     productId: string,
     data: UpdateProductDto,
   ): Promise<Product | null> {
-    const product = await this.findProductOrThrow(productId);
+    const product = await this.productRepository.findByProductIdOrFail(productId);
 
     if (data.categoryId) {
-      const category = await this.categoryRepository.findOne({
-        where: { categoryId: data.categoryId },
-      });
-      if (!category) {
-        throw new NotFoundError(
-          ErrorMessages.CATEGORY_NOT_FOUND || "Category not found",
-        );
-      }
+      const category = await this.categoryRepository.findByCategoryIdOrFail(data.categoryId);
       product.category = category;
       delete data.categoryId;
     }
@@ -152,7 +63,7 @@ export class ProductService implements IProductService {
   }
 
   async deleteProduct(productId: string): Promise<boolean> {
-    const product = await this.findProductOrThrow(productId);
+    const product = await this.productRepository.findByProductIdOrFail(productId);
     await this.productRepository.softRemove(product);
     return true;
   }

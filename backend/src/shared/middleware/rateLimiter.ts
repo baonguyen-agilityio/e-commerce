@@ -18,6 +18,8 @@ export const authLimiter = rateLimit({
     message: "Too many authentication attempts, please try again after an hour",
     code: "RATE_LIMIT_EXCEEDED",
   },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 export const checkoutLimiter = rateLimit({
@@ -27,4 +29,6 @@ export const checkoutLimiter = rateLimit({
     message: "Too many checkout attempts, please wait a minute",
     code: "RATE_LIMIT_EXCEEDED",
   },
+  standardHeaders: true,
+  legacyHeaders: false,
 });

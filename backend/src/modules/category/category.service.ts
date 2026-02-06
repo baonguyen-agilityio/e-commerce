@@ -1,4 +1,3 @@
-import { Repository } from "typeorm";
 import {
   CreateCategoryDto,
   ICategoryService,
@@ -6,51 +5,22 @@ import {
   CategoryQueryParams,
 } from "./category.interface";
 import { Category } from "./entities/Category";
-import { BadRequestError, NotFoundError } from "@/shared/errors";
+import { BadRequestError } from "@/shared/errors";
 import { PaginatedResult } from "@/shared/interfaces/pagination";
 import { ErrorMessages } from "@/shared/errors/messages";
+import { ICategoryRepository } from "./category.repository";
 
 export class CategoryService implements ICategoryService {
-  constructor(private readonly categoryRepository: Repository<Category>) { }
+  constructor(private readonly categoryRepository: ICategoryRepository) { }
 
-  private async findCategoryOrThrow(categoryId: string): Promise<Category> {
-    const category = await this.categoryRepository.findOneBy({ categoryId });
-    if (!category) {
-      throw new NotFoundError(ErrorMessages.CATEGORY_NOT_FOUND);
-    }
-    return category;
-  }
-
-  async getAllCategories(params: CategoryQueryParams = {}): Promise<PaginatedResult<Category>> {
-    const page = params.page || 1;
-    const limit = params.limit || 10;
-    const skip = (page - 1) * limit;
-
-    const queryBuilder = this.categoryRepository.createQueryBuilder("category");
-
-    if (params.search) {
-      queryBuilder.where(
-        "(category.name ILIKE :search OR category.description ILIKE :search)",
-        { search: `%${params.search}%` }
-      );
-    }
-
-    queryBuilder.orderBy("category.name", "ASC").skip(skip).take(limit);
-
-    const [data, total] = await queryBuilder.getManyAndCount();
-
-    return {
-      data,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+  async getAllCategories(
+    params: CategoryQueryParams = {},
+  ): Promise<PaginatedResult<Category>> {
+    return this.categoryRepository.findAll(params);
   }
 
   async getCategoryById(categoryId: string): Promise<Category | null> {
-    const category = await this.findCategoryOrThrow(categoryId);
-    return category;
+    return this.categoryRepository.findByCategoryIdOrFail(categoryId);
   }
 
   async createCategory(data: CreateCategoryDto): Promise<Category> {
@@ -62,15 +32,19 @@ export class CategoryService implements ICategoryService {
     categoryId: string,
     data: UpdateCategoryDto,
   ): Promise<Category> {
-    const category = await this.findCategoryOrThrow(categoryId);
+    const category = await this.categoryRepository.findByCategoryIdOrFail(
+      categoryId,
+    );
     Object.assign(category, data);
     return this.categoryRepository.save(category);
   }
 
   async deleteCategory(categoryId: string): Promise<boolean> {
-    const category = await this.findCategoryOrThrow(categoryId);
+    const category = await this.categoryRepository.findByCategoryIdOrFail(
+      categoryId,
+    );
 
-    if (category.products && category.products.length > 0) {
+    if (await this.categoryRepository.hasProducts(categoryId)) {
       throw new BadRequestError(ErrorMessages.CATEGORY_HAS_PRODUCTS);
     }
 

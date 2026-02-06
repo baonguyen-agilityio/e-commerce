@@ -1,5 +1,6 @@
-import { Repository } from "typeorm";
 import { CartWithTotal, ICartService } from "./cart.interface";
+import { ICartItemRepository, ICartRepository } from "./cart.repository";
+import { IProductRepository } from "@modules/product/product.repository";
 import { Cart } from "./entities/Cart";
 import { CartItem } from "./entities/CartItem";
 import { BadRequestError, NotFoundError } from "@/shared/errors";
@@ -9,27 +10,13 @@ import { loggers } from "@shared/utils/logger";
 
 export class CartService implements ICartService {
   constructor(
-    private readonly cartRepository: Repository<Cart>,
-    private readonly cartItemRepository: Repository<CartItem>,
-    private readonly productRepository: Repository<Product>,
+    private readonly cartRepository: ICartRepository,
+    private readonly cartItemRepository: ICartItemRepository,
+    private readonly productRepository: IProductRepository,
   ) { }
 
   async getOrCreateCart(clerkId: string): Promise<Cart> {
-    let cart = await this.cartRepository.findOne({
-      where: { clerkId },
-      relations: ["items", "items.product"],
-    });
-
-    if (!cart) {
-      loggers.debug('Creating new cart for user', { context: 'CartService', userId: clerkId });
-      cart = this.cartRepository.create({
-        clerkId,
-        items: [],
-      });
-      await this.cartRepository.save(cart);
-    }
-
-    return cart;
+    return this.cartRepository.findOrCreateByClerkId(clerkId);
   }
 
   async getCartByClerkId(clerkId: string): Promise<CartWithTotal> {
@@ -53,9 +40,7 @@ export class CartService implements ICartService {
   async addItemToCart(clerkId: string, productId: string, quantity: number = 1): Promise<CartItem> {
     const cart = await this.getOrCreateCart(clerkId);
 
-    const product = await this.productRepository.findOne({
-      where: { productId },
-    });
+    const product = await this.productRepository.findByProductId(productId);
     if (!product || !product.isActive) {
       throw new NotFoundError(ErrorMessages.PRODUCT_NOT_FOUND_OR_NOT_AVAILABLE);
     }
@@ -64,10 +49,7 @@ export class CartService implements ICartService {
       throw new BadRequestError(ErrorMessages.INSUFFICIENT_STOCK_FOR_REQUESTED_PRODUCT);
     }
 
-    let cartItem = await this.cartItemRepository.findOne({
-      where: { cart: { id: cart.id }, product: { id: product.id } },
-      relations: ["product"],
-    });
+    let cartItem = await this.cartItemRepository.findByCartAndProduct(cart.id, product.id);
 
     if (cartItem) {
       const newQuantity = cartItem.quantity + quantity;
@@ -100,10 +82,7 @@ export class CartService implements ICartService {
   ): Promise<CartItem> {
     const cart = await this.getOrCreateCart(clerkId);
 
-    const cartItem = await this.cartItemRepository.findOne({
-      where: { cartItemId, cart: { id: cart.id } },
-      relations: ["product"],
-    });
+    const cartItem = await this.cartItemRepository.findByCartItemIdAndCartId(cartItemId, cart.id);
 
     if (!cartItem) {
       throw new NotFoundError(ErrorMessages.CART_ITEM_NOT_FOUND);
@@ -132,15 +111,16 @@ export class CartService implements ICartService {
   async removeItemFromCart(clerkId: string, cartItemId: string): Promise<CartWithTotal> {
     const cart = await this.getOrCreateCart(clerkId);
 
-    const cartItem = await this.cartItemRepository.findOne({
-      where: { cartItemId, cart: { id: cart.id } },
-    });
+    const cartItem = await this.cartItemRepository.findByCartItemIdAndCartId(
+      cartItemId,
+      cart.id
+    );
 
     if (!cartItem) {
       throw new NotFoundError(ErrorMessages.CART_ITEM_NOT_FOUND);
     }
 
-    await this.cartItemRepository.delete(cartItem.id);
+    await this.cartItemRepository.deleteById(cartItem.id);
 
     loggers.info('Item removed from cart', {
       context: 'CartService',
@@ -154,7 +134,7 @@ export class CartService implements ICartService {
   async clearCart(clerkId: string): Promise<CartWithTotal> {
     const cart = await this.getOrCreateCart(clerkId);
 
-    await this.cartItemRepository.delete({ cart: { id: cart.id } });
+    await this.cartItemRepository.deleteByCart(cart.id);
 
     loggers.info('Cart cleared', {
       context: 'CartService',
