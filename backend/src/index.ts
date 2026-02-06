@@ -11,10 +11,12 @@ import { createCategoryRoutes } from "@modules/category";
 import { createCartRoutes } from "@modules/cart";
 import { createOrderRoutes } from "@modules/order";
 import { errorHandler } from "@shared/middleware/errorHandler";
+import { requestLogger } from "@shared/middleware/requestLogger";
 import helmet from "helmet";
 import { apiLimiter } from "@shared/middleware/rateLimiter";
 import { env } from "@config/environment";
 import { Server } from "http";
+import logger, { loggers } from "@shared/utils/logger";
 
 const app = express();
 const PORT = env.PORT;
@@ -37,13 +39,14 @@ app.use(
 );
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+app.use(requestLogger);
 app.use(clerkMiddleware());
 
 let server: Server;
 
 AppDataSource.initialize()
   .then(() => {
-    console.log("Database connected successfully");
+    loggers.info('Database connected successfully', { context: 'Database' });
 
     const container = createContainer(AppDataSource);
 
@@ -62,30 +65,37 @@ AppDataSource.initialize()
     app.use(errorHandler);
 
     server = app.listen(PORT, () => {
-      console.log(`Server is running on http://localhost:${PORT}`);
+      loggers.info(`Server is running on http://localhost:${PORT}`, {
+        context: 'Server',
+        port: PORT,
+        environment: env.NODE_ENV,
+      });
     });
   })
   .catch((error: Error) => {
-    console.error("Database connection failed:", error);
+    loggers.error('Database connection failed', error, { context: 'Database' });
     process.exit(1);
   });
 
 const gracefulShutdown = async (signal: string) => {
-  console.log(`\n${signal} received. Starting graceful shutdown...`);
+  loggers.info(`${signal} received. Starting graceful shutdown...`, {
+    context: 'Shutdown',
+    signal,
+  });
 
   if (server) {
     server.close(() => {
-      console.log("HTTP server closed.");
+      loggers.info('HTTP server closed', { context: 'Shutdown' });
     });
   }
 
   try {
     if (AppDataSource.isInitialized) {
       await AppDataSource.destroy();
-      console.log("Database connection closed.");
+      loggers.info('Database connection closed', { context: 'Shutdown' });
     }
   } catch (error) {
-    console.error("Error during database shutdown:", error);
+    loggers.error('Error during database shutdown', error, { context: 'Shutdown' });
   }
 
   setTimeout(() => {
@@ -97,12 +107,15 @@ process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+  loggers.error('Unhandled Promise Rejection', reason as Error, {
+    context: 'UnhandledRejection',
+    promise: String(promise),
+  });
   gracefulShutdown("unhandledRejection");
 });
 
 process.on("uncaughtException", (error) => {
-  console.error("Uncaught Exception:", error);
+  loggers.error('Uncaught Exception', error, { context: 'UncaughtException' });
   gracefulShutdown("uncaughtException");
 });
 

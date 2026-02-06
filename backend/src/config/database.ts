@@ -15,8 +15,8 @@ export const AppDataSource = new DataSource({
   username: env.DB_USERNAME,
   password: env.DB_PASSWORD,
   database: env.DB_NAME,
-  synchronize: env.NODE_ENV !== "production",
-  logging: env.NODE_ENV === "development",
+  synchronize: false,
+  logging: false,
   entities: [User, Product, Category, Cart, CartItem, Order, OrderItem],
   migrations: ["src/migrations/*.ts"],
 });

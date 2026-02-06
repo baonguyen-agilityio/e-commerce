@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { IEmailService, OrderEmailData } from "../../interfaces/IEmailService";
 import { renderOrderConfirmationEmail } from "./templates/order-confirmation";
+import { loggers } from "@shared/utils/logger";
 
 export class ResendEmailService implements IEmailService {
     private resend: Resend;
@@ -10,7 +11,10 @@ export class ResendEmailService implements IEmailService {
 
     async sendOrderConfirmation(data: OrderEmailData): Promise<void> {
         if (!data.customer.email) {
-            console.error('Cannot send email: customer email is missing');
+            loggers.error('Cannot send email: customer email is missing', null, {
+                context: 'ResendEmailService',
+                orderId: data.order.orderId
+            });
             return;
         }
 
@@ -22,8 +26,18 @@ export class ResendEmailService implements IEmailService {
                 subject,
                 html,
             });
+
+            loggers.info('Order confirmation email sent', {
+                context: 'ResendEmailService',
+                orderId: data.order.orderId,
+                email: data.customer.email
+            });
         } catch (error) {
-            console.error('Email sending failed:', error);
+            loggers.error('Email sending failed', error, {
+                context: 'ResendEmailService',
+                orderId: data.order.orderId,
+                email: data.customer.email
+            });
         }
     }
 }

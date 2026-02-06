@@ -8,6 +8,7 @@ import {
 } from "@/shared/errors";
 import { clerkClient } from "@clerk/express";
 import { ErrorMessages } from "@/shared/errors/messages";
+import { loggers } from "@shared/utils/logger";
 
 export class UserService implements IUserService {
   constructor(private readonly userRepository: Repository<User>) { }
@@ -39,7 +40,11 @@ export class UserService implements IUserService {
           publicMetadata: { role: data.role },
         });
       } catch (error) {
-        console.error("Failed to sync role to Clerk metadata:", error);
+        loggers.error("Failed to sync role to Clerk metadata", error, {
+          context: 'UserService',
+          userId: data.clerkId,
+          role: data.role
+        });
       }
     }
 

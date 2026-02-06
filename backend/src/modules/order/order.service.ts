@@ -15,6 +15,7 @@ import {
 } from "@shared/errors";
 import { ErrorMessages } from "@shared/errors/messages";
 import { IEmailService } from "@shared/interfaces/IEmailService";
+import { loggers } from "@shared/utils/logger";
 
 export class OrderService implements IOrderService {
   constructor(
@@ -39,6 +40,10 @@ export class OrderService implements IOrderService {
     clerkId: string,
     paymentMethodId: string,
   ): Promise<CheckoutResult> {
+    const logContext = { context: 'OrderService.checkoutOrder', userId: clerkId };
+
+    loggers.info('Starting checkout process', { ...logContext, paymentMethodId: '***REDACTED***' });
+
     const user = await this.findUserOrThrow(clerkId);
     const cart = await this.cartRepository.findOne({
       where: { clerkId },
@@ -46,6 +51,7 @@ export class OrderService implements IOrderService {
     });
 
     if (!cart || !cart.items || cart.items.length === 0) {
+      loggers.warn('Checkout attempted with empty cart', logContext);
       throw new BadRequestError(ErrorMessages.CART_EMPTY);
     }
 
@@ -54,6 +60,12 @@ export class OrderService implements IOrderService {
       total += Number(item.product.price) * item.quantity;
     }
     total = Math.round(total * 100) / 100;
+
+    loggers.info('Cart validated for checkout', {
+      ...logContext,
+      itemCount: cart.items.length,
+      total,
+    });
 
     for (const item of cart.items) {
       const product = await this.productRepository.findOne({
@@ -64,11 +76,23 @@ export class OrderService implements IOrderService {
         const available = product ? product.stock : 0;
 
         if (available <= 0) {
+          loggers.warn('Product out of stock, removing from cart', {
+            ...logContext,
+            productId: item.product.productId,
+            productName: item.product.name,
+          });
           await this.cartItemRepository.delete(item.id);
           throw new BadRequestError(
             `Product ${item.product.name} is out of stock and has been removed from your cart.`,
           );
         } else {
+          loggers.warn('Insufficient stock, updating cart', {
+            ...logContext,
+            productId: item.product.productId,
+            productName: item.product.name,
+            requested: item.quantity,
+            available,
+          });
           await this.cartItemRepository.update(item.id, {
             quantity: available,
           });
@@ -81,6 +105,8 @@ export class OrderService implements IOrderService {
 
     const orderPublicId = await this.orderRepository.manager.transaction(
       async (manager) => {
+        loggers.debug('Starting order creation transaction', logContext);
+
         for (const item of cart.items) {
           const product = await manager.findOne(Product, {
             where: { productId: item.product.productId },
@@ -88,6 +114,12 @@ export class OrderService implements IOrderService {
           });
 
           if (!product || product.stock < item.quantity) {
+            loggers.error('Stock changed during checkout transaction', null, {
+              ...logContext,
+              productId: item.product.productId,
+              requestedQuantity: item.quantity,
+              availableStock: product?.stock || 0,
+            });
             throw new BadRequestError(
               "Stock changed during checkout. Please try again.",
             );
@@ -117,9 +149,22 @@ export class OrderService implements IOrderService {
           });
         }
 
+        loggers.info('Order created successfully', {
+          ...logContext,
+          orderId: order.orderId,
+          total,
+          itemCount: cart.items.length,
+        });
+
         return order.orderId;
       },
     );
+
+    loggers.info('Processing payment', {
+      ...logContext,
+      orderId: orderPublicId,
+      amount: total,
+    });
 
     const paymentResult = await this.paymentGateway.processPayment({
       amount: total,
@@ -139,12 +184,32 @@ export class OrderService implements IOrderService {
           throw new Error("Critical error: Order not found after creation");
 
         if (paymentResult.success) {
+          loggers.info('Payment successful', {
+            ...logContext,
+            orderId: orderPublicId,
+            paymentId: paymentResult.paymentId,
+            amount: total,
+          });
+
           order.status = OrderStatus.PAID;
           order.paymentId = paymentResult.paymentId;
           await manager.save(order);
           await manager.delete(CartItem, { cart: { id: cart.id } });
+
+          loggers.info('Cart cleared after successful payment', {
+            ...logContext,
+            orderId: orderPublicId,
+          });
+
           return order;
         } else {
+          loggers.error('Payment failed, rolling back inventory', null, {
+            ...logContext,
+            orderId: orderPublicId,
+            error: paymentResult.error,
+            amount: total,
+          });
+
           order.status = OrderStatus.FAILED;
           order.failureReason = paymentResult.error || "Unknown payment error";
           await manager.save(order);
@@ -154,6 +219,12 @@ export class OrderService implements IOrderService {
               stock: () => `stock + ${item.quantity}`,
             });
           }
+
+          loggers.info('Inventory restored after payment failure', {
+            ...logContext,
+            orderId: orderPublicId,
+          });
+
           return order;
         }
       },
@@ -167,7 +238,19 @@ export class OrderService implements IOrderService {
 
     this.emailService
       .sendOrderConfirmation({ order: finalOrder, customer: user })
-      .catch((err) => console.error("Email failed:", err));
+      .catch((err) => {
+        loggers.error('Failed to send order confirmation email', err, {
+          ...logContext,
+          orderId: finalOrder.orderId,
+          userEmail: user.email,
+        });
+      });
+
+    loggers.info('Checkout completed successfully', {
+      ...logContext,
+      orderId: finalOrder.orderId,
+      total: finalOrder.total,
+    });
 
     return { order: finalOrder, success: true };
   }
@@ -205,7 +288,7 @@ export class OrderService implements IOrderService {
   ): Promise<Order | null> {
     const order = await this.orderRepository.findOne({
       where: { orderId },
-      relations: ["items", "items.product"],
+      relations: ["items", "items.product", "user"],
     });
 
     if (!order) {

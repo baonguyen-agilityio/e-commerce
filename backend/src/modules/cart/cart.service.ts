@@ -5,6 +5,7 @@ import { CartItem } from "./entities/CartItem";
 import { BadRequestError, NotFoundError } from "@/shared/errors";
 import { ErrorMessages } from "@/shared/errors/messages";
 import { Product } from "@/modules/product/entities/Product";
+import { loggers } from "@shared/utils/logger";
 
 export class CartService implements ICartService {
   constructor(
@@ -20,6 +21,7 @@ export class CartService implements ICartService {
     });
 
     if (!cart) {
+      loggers.debug('Creating new cart for user', { context: 'CartService', userId: clerkId });
       cart = this.cartRepository.create({
         clerkId,
         items: [],
@@ -79,8 +81,14 @@ export class CartService implements ICartService {
         product,
         quantity,
       });
-
     }
+
+    loggers.info('Item added to cart', {
+      context: 'CartService',
+      userId: clerkId,
+      productId,
+      quantity,
+    });
 
     return this.cartItemRepository.save(cartItem);
   }
@@ -110,6 +118,14 @@ export class CartService implements ICartService {
     }
 
     cartItem.quantity = quantity;
+
+    loggers.info('Cart item quantity updated', {
+      context: 'CartService',
+      userId: clerkId,
+      cartItemId,
+      newQuantity: quantity
+    });
+
     return this.cartItemRepository.save(cartItem);
   }
 
@@ -126,6 +142,12 @@ export class CartService implements ICartService {
 
     await this.cartItemRepository.delete(cartItem.id);
 
+    loggers.info('Item removed from cart', {
+      context: 'CartService',
+      userId: clerkId,
+      cartItemId,
+    });
+
     return this.getCartByClerkId(clerkId);
   }
 
@@ -133,6 +155,11 @@ export class CartService implements ICartService {
     const cart = await this.getOrCreateCart(clerkId);
 
     await this.cartItemRepository.delete({ cart: { id: cart.id } });
+
+    loggers.info('Cart cleared', {
+      context: 'CartService',
+      userId: clerkId,
+    });
 
     return this.getCartByClerkId(clerkId);
   }
