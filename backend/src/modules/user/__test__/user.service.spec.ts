@@ -1,15 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { UserService } from "../user.service";
 import { User, UserRole } from "../entities/User";
-import {
-  createMockRepository,
-  MockRepository,
-} from "@/test/mocks/repository.mock";
+import { createMockRepository, MockRepository } from "@/test/mocks/repository.mock";
 import { BadRequestError, ForbiddenError } from "@/shared/errors";
+
+type UserRepositoryMock = MockRepository<User> & {
+  findByClerkId: ReturnType<typeof vi.fn>;
+  findByClerkIdOrFail: ReturnType<typeof vi.fn>;
+  findAllWithDeleted: ReturnType<typeof vi.fn>;
+};
 
 describe("UserService", () => {
   let userService: UserService;
-  let mockUserRepository: MockRepository<User>;
+  let mockUserRepository: UserRepositoryMock;
 
   let mockCustomer: Partial<User>;
   let mockAdmin: Partial<User>;
@@ -42,13 +45,18 @@ describe("UserService", () => {
       createdAt: new Date("2024-01-03"),
     };
 
-    mockUserRepository = createMockRepository<User>();
+    mockUserRepository = {
+      ...createMockRepository<User>(),
+      findByClerkId: vi.fn(),
+      findByClerkIdOrFail: vi.fn(),
+      findAllWithDeleted: vi.fn(),
+    };
     userService = new UserService(mockUserRepository as any);
   });
 
   describe("findOrCreate", () => {
     it("should return existing user", async () => {
-      mockUserRepository.findOne.mockResolvedValue(mockCustomer);
+      mockUserRepository.findByClerkId.mockResolvedValue(mockCustomer);
 
       const result = await userService.findOrCreate({
         clerkId: "clerk_customer",
@@ -61,7 +69,7 @@ describe("UserService", () => {
     });
 
     it("should create new user when not found", async () => {
-      mockUserRepository.findOne.mockResolvedValue(null);
+      mockUserRepository.findByClerkId.mockResolvedValue(null);
       mockUserRepository.create.mockReturnValue(mockCustomer);
       mockUserRepository.save.mockResolvedValue(mockCustomer);
 
@@ -78,7 +86,7 @@ describe("UserService", () => {
 
   describe("changeRole", () => {
     it("should throw BadRequestError when trying to change own role", async () => {
-      mockUserRepository.findOne.mockResolvedValue(mockAdmin);
+      mockUserRepository.findByClerkIdOrFail.mockResolvedValue(mockAdmin);
 
       await expect(
         userService.changeRole({
@@ -91,7 +99,7 @@ describe("UserService", () => {
     });
 
     it("should throw ForbiddenError when trying to demote SUPER_ADMIN", async () => {
-      mockUserRepository.findOne.mockResolvedValue(mockSuperAdmin);
+      mockUserRepository.findByClerkIdOrFail.mockResolvedValue(mockSuperAdmin);
 
       await expect(
         userService.changeRole({
@@ -104,7 +112,7 @@ describe("UserService", () => {
     });
 
     it("should throw ForbiddenError when non-SUPER_ADMIN tries to promote to ADMIN", async () => {
-      mockUserRepository.findOne.mockResolvedValue(mockCustomer);
+      mockUserRepository.findByClerkIdOrFail.mockResolvedValue(mockCustomer);
 
       await expect(
         userService.changeRole({
@@ -117,7 +125,7 @@ describe("UserService", () => {
     });
 
     it("should throw ForbiddenError when trying to promote to SUPER_ADMIN", async () => {
-      mockUserRepository.findOne.mockResolvedValue(mockCustomer);
+      mockUserRepository.findByClerkIdOrFail.mockResolvedValue(mockCustomer);
 
       await expect(
         userService.changeRole({
@@ -130,7 +138,7 @@ describe("UserService", () => {
     });
 
     it("should successfully change role when valid", async () => {
-      mockUserRepository.findOne.mockResolvedValue(mockCustomer);
+      mockUserRepository.findByClerkIdOrFail.mockResolvedValue(mockCustomer);
       mockUserRepository.save.mockResolvedValue({
         ...mockCustomer,
         role: UserRole.STAFF,
@@ -147,7 +155,7 @@ describe("UserService", () => {
     });
 
     it("should throw ForbiddenError when trying to modify user with higher role", async () => {
-      mockUserRepository.findOne.mockResolvedValue(mockAdmin);
+      mockUserRepository.findByClerkIdOrFail.mockResolvedValue(mockAdmin);
 
       await expect(
         userService.changeRole({
@@ -160,7 +168,7 @@ describe("UserService", () => {
     });
 
     it("should throw ForbiddenError when trying to promote user to own role level", async () => {
-      mockUserRepository.findOne.mockResolvedValue(mockCustomer);
+      mockUserRepository.findByClerkIdOrFail.mockResolvedValue(mockCustomer);
 
       await expect(
         userService.changeRole({
@@ -173,7 +181,7 @@ describe("UserService", () => {
     });
 
     it("should throw BadRequestError when demoting the last admin", async () => {
-      mockUserRepository.findOne.mockResolvedValue(mockAdmin);
+      mockUserRepository.findByClerkIdOrFail.mockResolvedValue(mockAdmin);
       mockUserRepository.count.mockResolvedValue(1);
 
       await expect(
@@ -190,19 +198,13 @@ describe("UserService", () => {
   describe("getAllUsers", () => {
     it("should return paginated users", async () => {
       const users = [mockSuperAdmin, mockAdmin, mockCustomer];
-
-      const mockQueryBuilder = {
-        withDeleted: vi.fn().mockReturnThis(),
-        addSelect: vi.fn().mockReturnThis(),
-        orderBy: vi.fn().mockReturnThis(),
-        addOrderBy: vi.fn().mockReturnThis(),
-        andWhere: vi.fn().mockReturnThis(),
-        skip: vi.fn().mockReturnThis(),
-        take: vi.fn().mockReturnThis(),
-        getManyAndCount: vi.fn().mockResolvedValue([users, users.length]),
-      };
-
-      mockUserRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+      mockUserRepository.findAllWithDeleted.mockResolvedValue({
+        data: users,
+        total: users.length,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      });
 
       const result = await userService.getAllUsers({ page: 1, limit: 10 });
 
@@ -211,28 +213,27 @@ describe("UserService", () => {
       expect(result.page).toBe(1);
       expect(result.limit).toBe(10);
       expect(result.data[0].role).toBe(UserRole.SUPER_ADMIN);
+      expect(mockUserRepository.findAllWithDeleted).toHaveBeenCalledWith({
+        page: 1,
+        limit: 10,
+      });
     });
   });
 
   describe("deleteUser", () => {
     it("should delete user successfully", async () => {
-      mockUserRepository.findOne.mockResolvedValue(mockCustomer);
+      mockUserRepository.findByClerkIdOrFail.mockResolvedValue(mockCustomer);
       mockUserRepository.count.mockResolvedValue(2);
       mockUserRepository.softRemove.mockResolvedValue(mockCustomer);
 
-      const result = await userService.deleteUser(
-        "clerk_customer",
-        UserRole.ADMIN,
-      );
+      const result = await userService.deleteUser("clerk_customer", UserRole.ADMIN);
 
       expect(result).toBe(true);
-      expect(mockUserRepository.softRemove).toHaveBeenCalledWith(
-        mockCustomer,
-      );
+      expect(mockUserRepository.softRemove).toHaveBeenCalledWith(mockCustomer);
     });
 
     it("should throw ForbiddenError when trying to delete SUPER_ADMIN", async () => {
-      mockUserRepository.findOne.mockResolvedValue(mockSuperAdmin);
+      mockUserRepository.findByClerkIdOrFail.mockResolvedValue(mockSuperAdmin);
 
       await expect(
         userService.deleteUser("clerk_super", UserRole.ADMIN),
@@ -240,7 +241,7 @@ describe("UserService", () => {
     });
 
     it("should throw ForbiddenError when trying to delete user with higher/equal role", async () => {
-      mockUserRepository.findOne.mockResolvedValue(mockAdmin);
+      mockUserRepository.findByClerkIdOrFail.mockResolvedValue(mockAdmin);
 
       await expect(
         userService.deleteUser("clerk_admin", UserRole.ADMIN),
@@ -248,18 +249,15 @@ describe("UserService", () => {
     });
 
     it("should allow deleting CUSTOMER even when only 1 admin exists", async () => {
-      mockUserRepository.findOne.mockResolvedValue(mockCustomer);
+      mockUserRepository.findByClerkIdOrFail.mockResolvedValue(mockCustomer);
       mockUserRepository.count.mockResolvedValue(1);
 
-      const result = await userService.deleteUser(
-        "clerk_customer",
-        UserRole.ADMIN,
-      );
+      const result = await userService.deleteUser("clerk_customer", UserRole.ADMIN);
       expect(result).toBe(true);
     });
 
     it("should throw BadRequestError when deleting the last admin", async () => {
-      mockUserRepository.findOne.mockResolvedValue(mockAdmin);
+      mockUserRepository.findByClerkIdOrFail.mockResolvedValue(mockAdmin);
       mockUserRepository.count.mockResolvedValue(1);
 
       await expect(
@@ -270,7 +268,7 @@ describe("UserService", () => {
 
   describe("toggleBan", () => {
     it("should ban user successfully", async () => {
-      mockUserRepository.findOne.mockResolvedValue({
+      mockUserRepository.findByClerkIdOrFail.mockResolvedValue({
         ...mockCustomer,
         isBanned: false,
       });
@@ -279,16 +277,13 @@ describe("UserService", () => {
         isBanned: true,
       });
 
-      const result = await userService.toggleBan(
-        "clerk_customer",
-        UserRole.ADMIN,
-      );
+      const result = await userService.toggleBan("clerk_customer", UserRole.ADMIN);
 
       expect(result.isBanned).toBe(true);
     });
 
     it("should unban user successfully", async () => {
-      mockUserRepository.findOne.mockResolvedValue({
+      mockUserRepository.findByClerkIdOrFail.mockResolvedValue({
         ...mockCustomer,
         isBanned: true,
       });
@@ -297,16 +292,13 @@ describe("UserService", () => {
         isBanned: false,
       });
 
-      const result = await userService.toggleBan(
-        "clerk_customer",
-        UserRole.ADMIN,
-      );
+      const result = await userService.toggleBan("clerk_customer", UserRole.ADMIN);
 
       expect(result.isBanned).toBe(false);
     });
 
     it("should throw ForbiddenError when trying to ban user with higher/equal role", async () => {
-      mockUserRepository.findOne.mockResolvedValue(mockAdmin);
+      mockUserRepository.findByClerkIdOrFail.mockResolvedValue(mockAdmin);
 
       await expect(
         userService.toggleBan("clerk_admin", UserRole.ADMIN),
@@ -316,7 +308,7 @@ describe("UserService", () => {
 
   describe("toggleLock", () => {
     it("should lock user successfully", async () => {
-      mockUserRepository.findOne.mockResolvedValue({
+      mockUserRepository.findByClerkIdOrFail.mockResolvedValue({
         ...mockCustomer,
         isLocked: false,
       });
@@ -325,16 +317,13 @@ describe("UserService", () => {
         isLocked: true,
       });
 
-      const result = await userService.toggleLock(
-        "clerk_customer",
-        UserRole.ADMIN,
-      );
+      const result = await userService.toggleLock("clerk_customer", UserRole.ADMIN);
 
       expect(result.isLocked).toBe(true);
     });
 
     it("should unlock user successfully", async () => {
-      mockUserRepository.findOne.mockResolvedValue({
+      mockUserRepository.findByClerkIdOrFail.mockResolvedValue({
         ...mockCustomer,
         isLocked: true,
       });
@@ -343,16 +332,13 @@ describe("UserService", () => {
         isLocked: false,
       });
 
-      const result = await userService.toggleLock(
-        "clerk_customer",
-        UserRole.ADMIN,
-      );
+      const result = await userService.toggleLock("clerk_customer", UserRole.ADMIN);
 
       expect(result.isLocked).toBe(false);
     });
 
     it("should throw ForbiddenError when trying to lock user with higher/equal role", async () => {
-      mockUserRepository.findOne.mockResolvedValue(mockAdmin);
+      mockUserRepository.findByClerkIdOrFail.mockResolvedValue(mockAdmin);
 
       await expect(
         userService.toggleLock("clerk_admin", UserRole.ADMIN),

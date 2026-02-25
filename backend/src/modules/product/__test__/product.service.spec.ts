@@ -1,25 +1,37 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ProductService } from "../product.service";
-import {
-  createMockRepository,
-  createMockQueryBuilder,
-  MockRepository,
-} from "@/test/mocks/repository.mock";
+import { createMockRepository, MockRepository } from "@/test/mocks/repository.mock";
 import { Product } from "../entities/Product";
 import { Category } from "@modules/category/entities/Category";
 import { NotFoundError } from "@/shared/errors";
 import { createMockProduct } from "@/test/factories/product.factory";
 
+type ProductRepositoryMock = MockRepository<Product> & {
+  findByProductIdOrFail: ReturnType<typeof vi.fn>;
+  findAllWithFilters: ReturnType<typeof vi.fn>;
+};
+
+type CategoryRepositoryMock = MockRepository<Category> & {
+  findByCategoryIdOrFail: ReturnType<typeof vi.fn>;
+};
+
 describe("ProductService", () => {
   let productService: ProductService;
-  let mockProductRepository: MockRepository<Product>;
-  let mockCategoryRepository: MockRepository<Category>;
+  let mockProductRepository: ProductRepositoryMock;
+  let mockCategoryRepository: CategoryRepositoryMock;
 
   const mockProduct = createMockProduct({ productId: "prod-1" });
 
   beforeEach(() => {
-    mockProductRepository = createMockRepository<Product>();
-    mockCategoryRepository = createMockRepository<Category>();
+    mockProductRepository = {
+      ...createMockRepository<Product>(),
+      findByProductIdOrFail: vi.fn(),
+      findAllWithFilters: vi.fn(),
+    };
+    mockCategoryRepository = {
+      ...createMockRepository<Category>(),
+      findByCategoryIdOrFail: vi.fn(),
+    };
     productService = new ProductService(
       mockProductRepository as any,
       mockCategoryRepository as any,
@@ -28,22 +40,24 @@ describe("ProductService", () => {
 
   describe("getProductByProductId", () => {
     it("should return product when found", async () => {
-      mockProductRepository.findOne.mockResolvedValue(mockProduct);
+      mockProductRepository.findByProductIdOrFail.mockResolvedValue(mockProduct);
 
       const result = await productService.getProductByProductId("prod-1");
 
       expect(result).toEqual(mockProduct);
-      expect(mockProductRepository.findOne).toHaveBeenCalledWith(expect.objectContaining({
-        where: { productId: "prod-1" }
-      }));
+      expect(mockProductRepository.findByProductIdOrFail).toHaveBeenCalledWith(
+        "prod-1",
+      );
     });
 
     it("should throw NotFoundError when product not found", async () => {
-      mockProductRepository.findOne.mockResolvedValue(null);
-
-      await expect(productService.getProductByProductId("missing-999")).rejects.toThrow(
-        NotFoundError,
+      mockProductRepository.findByProductIdOrFail.mockRejectedValue(
+        new NotFoundError("Product not found"),
       );
+
+      await expect(
+        productService.getProductByProductId("missing-999"),
+      ).rejects.toThrow(NotFoundError);
     });
   });
 
@@ -59,15 +73,23 @@ describe("ProductService", () => {
 
       const mockCategory = { id: 1, categoryId: "cat-1", name: "Test Category" };
 
-      mockCategoryRepository.findOne.mockResolvedValue(mockCategory as any);
-      mockProductRepository.create.mockReturnValue({ ...createDto, productId: "prod-2" });
-      mockProductRepository.save.mockResolvedValue({ ...createDto, productId: "prod-2" });
+      mockCategoryRepository.findByCategoryIdOrFail.mockResolvedValue(
+        mockCategory as any,
+      );
+      mockProductRepository.create.mockReturnValue({
+        ...createDto,
+        productId: "prod-2",
+      });
+      mockProductRepository.save.mockResolvedValue({
+        ...createDto,
+        productId: "prod-2",
+      });
 
       const result = await productService.createProduct(createDto);
 
-      expect(mockCategoryRepository.findOne).toHaveBeenCalledWith({
-        where: { categoryId: "cat-1" },
-      });
+      expect(mockCategoryRepository.findByCategoryIdOrFail).toHaveBeenCalledWith(
+        "cat-1",
+      );
       expect(mockProductRepository.create).toHaveBeenCalled();
       expect(mockProductRepository.save).toHaveBeenCalled();
       expect(result.name).toBe(createDto.name);
@@ -83,11 +105,11 @@ describe("ProductService", () => {
 
       const mockCategory = { id: 1, categoryId: "cat-1", name: "Test Category" };
 
-      mockCategoryRepository.findOne.mockResolvedValue(mockCategory as any);
-      mockProductRepository.create.mockImplementation((data) => data);
-      mockProductRepository.save.mockImplementation((data) =>
-        Promise.resolve(data),
+      mockCategoryRepository.findByCategoryIdOrFail.mockResolvedValue(
+        mockCategory as any,
       );
+      mockProductRepository.create.mockImplementation((data) => data);
+      mockProductRepository.save.mockImplementation((data) => Promise.resolve(data));
 
       await productService.createProduct(createDto);
 
@@ -100,7 +122,7 @@ describe("ProductService", () => {
   describe("updateProduct", () => {
     it("should update and return product", async () => {
       const updateDto = { name: "Updated Name" };
-      mockProductRepository.findOne.mockResolvedValue(mockProduct);
+      mockProductRepository.findByProductIdOrFail.mockResolvedValue(mockProduct);
       mockProductRepository.save.mockResolvedValue({
         ...mockProduct,
         ...updateDto,
@@ -109,10 +131,15 @@ describe("ProductService", () => {
       const result = await productService.updateProduct("prod-1", updateDto);
 
       expect(result?.name).toBe("Updated Name");
+      expect(mockProductRepository.findByProductIdOrFail).toHaveBeenCalledWith(
+        "prod-1",
+      );
     });
 
     it("should throw NotFoundError when product not found", async () => {
-      mockProductRepository.findOne.mockResolvedValue(null);
+      mockProductRepository.findByProductIdOrFail.mockRejectedValue(
+        new NotFoundError("Product not found"),
+      );
 
       await expect(
         productService.updateProduct("missing-999", { name: "Test" }),
@@ -122,7 +149,7 @@ describe("ProductService", () => {
 
   describe("deleteProduct", () => {
     it("should delete product and return true", async () => {
-      mockProductRepository.findOne.mockResolvedValue(mockProduct);
+      mockProductRepository.findByProductIdOrFail.mockResolvedValue(mockProduct);
       mockProductRepository.softRemove.mockResolvedValue(mockProduct);
 
       const result = await productService.deleteProduct("prod-1");
@@ -134,28 +161,35 @@ describe("ProductService", () => {
 
   describe("getAllProducts", () => {
     it("should return paginated products", async () => {
-      const mockProducts = [mockProduct];
-      const mockQueryBuilder = createMockQueryBuilder(mockProducts, 1);
-
-      mockProductRepository.createQueryBuilder.mockReturnValue(
-        mockQueryBuilder as any,
-      );
+      const paginatedResult = {
+        data: [mockProduct],
+        total: 1,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      };
+      mockProductRepository.findAllWithFilters.mockResolvedValue(paginatedResult);
 
       const result = await productService.getAllProducts({
         page: 1,
         limit: 10,
       });
 
-      expect(result.data).toEqual(mockProducts);
-      expect(result.total).toBe(1);
-      expect(result.totalPages).toBe(1);
+      expect(result).toEqual(paginatedResult);
+      expect(mockProductRepository.findAllWithFilters).toHaveBeenCalledWith({
+        page: 1,
+        limit: 10,
+      });
     });
 
     it("should apply search filter", async () => {
-      const mockQueryBuilder = createMockQueryBuilder([], 0);
-      mockProductRepository.createQueryBuilder.mockReturnValue(
-        mockQueryBuilder as any,
-      );
+      mockProductRepository.findAllWithFilters.mockResolvedValue({
+        data: [],
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 0,
+      });
 
       await productService.getAllProducts({
         search: "test",
@@ -163,10 +197,11 @@ describe("ProductService", () => {
         limit: 10,
       });
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        "(product.name ILIKE :search OR product.description ILIKE :search)",
-        { search: "%test%" },
-      );
+      expect(mockProductRepository.findAllWithFilters).toHaveBeenCalledWith({
+        search: "test",
+        page: 1,
+        limit: 10,
+      });
     });
   });
 });
