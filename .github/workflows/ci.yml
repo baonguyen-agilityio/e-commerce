@@ -8,6 +8,8 @@ on:
     branches:
       - main
       - feat/e-commerce
+env:
+  CI: true
 jobs:
   backend-ci:
     name: Backend CI
