@@ -3,9 +3,11 @@ on:
   push:
     branches:
       - main
+      - feat/e-commerce
   pull_request:
     branches:
       - main
+      - feat/e-commerce
 jobs:
   backend-ci:
     name: Backend CI
