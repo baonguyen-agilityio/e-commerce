@@ -16,7 +16,9 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest --watch",
-    "seed": "ts-node src/seeds/seed.ts"
+    "seed": "SEED_MODE=upsert ts-node src/seeds/seed.ts",
+    "seed:wipe": "SEED_MODE=wipe ts-node src/seeds/seed.ts",
+    "seed:skip": "SEED_MODE=skip_if_not_empty ts-node src/seeds/seed.ts"
   },
   "keywords": [],
   "author": "",
