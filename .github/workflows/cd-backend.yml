@@ -1,0 +1,83 @@
+name: CD - Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+
+concurrency:
+  group: cd-backend-production
+  cancel-in-progress: true
+
+env:
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/ecommerce-backend
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.meta.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest
+
+      - name: Build and Push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+#   deploy:
+#     name: Deploy on Railway
+#     runs-on: ubuntu-latest
+#     needs: build-and-push
+#     environment: Production
+#     defaults:
+#       run:
+#         working-directory: backend
+
+#     steps:
+#       - uses: actions/checkout@v4
+
+#       - name: Install Railway CLI
+#         run: npm install -g @railway/cli
+
+#       - name: Trigger Railway Redeploy
+#         run: railway redeploy --service ${{ secrets.RAILWAY_SERVICE_NAME }} --yes
+#         env:
+#           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+#       - name: Wait for deployment to be live
+#         run: sleep 60
+
+#       - name: Run DB Migrations
+#         run: railway run --service ${{ secrets.RAILWAY_SERVICE_NAME }} npm run migration:run
+#         env:
+#           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+#       - name: Smoke Test (Health Check)
+#         run: |
+#           curl --fail --retry 5 --retry-delay 10 \
+#             ${{ secrets.PRODUCTION_API_URL }}/api/v1/health
+
