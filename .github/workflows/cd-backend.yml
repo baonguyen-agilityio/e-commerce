@@ -5,6 +5,7 @@ on:
     branches: [main, feat/e-commerce]
     paths:
       - 'backend/**'
+      - '.github/workflows/cd-backend.yml'
 
 concurrency:
   group: cd-backend-production
