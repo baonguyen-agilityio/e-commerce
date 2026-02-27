@@ -11,9 +11,6 @@ concurrency:
   group: cd-backend-production
   cancel-in-progress: true
 
-env:
-  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/e-commerce-be
-
 jobs:
   build-and-push:
     name: Build & Push Docker Image
@@ -37,7 +34,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.IMAGE_NAME }}
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/e-commerce-be
           tags: |
             type=sha,prefix=sha-
             type=raw,value=latest
