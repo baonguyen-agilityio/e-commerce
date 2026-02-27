@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/ecommerce-backend
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/e-commerce-be
 
 jobs:
   build-and-push:
