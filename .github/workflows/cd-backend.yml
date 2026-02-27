@@ -34,7 +34,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/e-commerce-be
+          images: boo26/e-commerce-be
           tags: |
             type=sha,prefix=sha-
             type=raw,value=latest
