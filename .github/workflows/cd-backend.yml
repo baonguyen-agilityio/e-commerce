@@ -34,7 +34,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: boo26/e-commerce-be
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/e-commerce-be
           tags: |
             type=sha,prefix=sha-
             type=raw,value=latest
@@ -49,36 +49,30 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-#   deploy:
-#     name: Deploy on Railway
-#     runs-on: ubuntu-latest
-#     needs: build-and-push
-#     environment: Production
-#     defaults:
-#       run:
-#         working-directory: backend
+  deploy:
+    name: Deploy on Railway
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: Production
+    defaults:
+      run:
+        working-directory: backend
 
-#     steps:
-#       - uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-#       - name: Install Railway CLI
-#         run: npm install -g @railway/cli
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
 
-#       - name: Trigger Railway Redeploy
-#         run: railway redeploy --service ${{ secrets.RAILWAY_SERVICE_NAME }} --yes
-#         env:
-#           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      - name: Trigger Railway Redeploy
+        run: railway redeploy --service ${{ secrets.RAILWAY_SERVICE_NAME }} --yes
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
-#       - name: Wait for deployment to be live
-#         run: sleep 60
+      - name: Wait for deployment to be live
+        run: sleep 60
 
-#       - name: Run DB Migrations
-#         run: railway run --service ${{ secrets.RAILWAY_SERVICE_NAME }} npm run migration:run
-#         env:
-#           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-
-#       - name: Smoke Test (Health Check)
-#         run: |
-#           curl --fail --retry 5 --retry-delay 10 \
-#             ${{ secrets.PRODUCTION_API_URL }}/api/v1/health
-
+      - name: Run DB Migrations
+        run: railway run --service ${{ secrets.RAILWAY_SERVICE_NAME }} npm run migration:run
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
