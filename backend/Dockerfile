@@ -26,7 +26,7 @@ FROM base AS deps
 # into this layer.
 RUN --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=package-lock.json,target=package-lock.json \
-    --mount=type=cache,target=/root/.npm \
+    --mount=type=cache,id=npm-deps,target=/root/.npm \
     npm ci --omit=dev
 
 ################################################################################
@@ -37,7 +37,7 @@ FROM deps AS build
 # "devDependencies" to be installed to build. If you don't need this, remove this step.
 RUN --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=package-lock.json,target=package-lock.json \
-    --mount=type=cache,target=/root/.npm \
+    --mount=type=cache,id=npm-build,target=/root/.npm \
     npm ci
 
 # Copy the rest of the source files into the image.
