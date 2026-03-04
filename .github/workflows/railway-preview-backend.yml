@@ -45,12 +45,13 @@ jobs:
           echo "All outputs: ${{ toJSON(steps.railway.outputs) }}"
 
       - name: Post or update deployment comment
-        if: ${{ always() && steps.railway.outputs.service_domain != '' }}
+        if: ${{ steps.railway.outcome == 'success' }}
         uses: actions/github-script@v7
         with:
           script: |
             const marker = '<!-- railway-preview-backend -->';
             const serviceDomain = '${{ steps.railway.outputs.service_domain }}';
+            const prNumber = context.issue.number;
 
             const { data: comments } = await github.rest.issues.listComments({
               issue_number: context.issue.number,
@@ -58,9 +59,20 @@ jobs:
               repo: context.repo.repo
             });
 
-            const body = `${marker}
-            🚀 **Backend Preview:** https://${serviceDomain}
-            `;
+            let body;
+            if (serviceDomain && serviceDomain !== '') {
+              body = `${marker}
+              🚀 **Backend Preview:** https://${serviceDomain}
+              `;
+            } else {
+              body = `${marker}
+              ✅ **Backend deployed successfully to Railway**
+              
+              Environment: \`pr-${prNumber}\`
+              
+              Check [Railway Dashboard](https://railway.app) to get the deployment URL.
+              `;
+            }
 
             const existingComment = comments.find(comment => comment.body.includes(marker));
 
