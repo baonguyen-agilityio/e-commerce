@@ -35,7 +35,7 @@ jobs:
           preview_environment_name: "pr-${{ github.event.pull_request.number }}"
           branch_name: ${{ github.head_ref }}
           reuse_preview_environment: "true"
-          api_service_name: "backend"
+          api_service_name: "e-commerce-be-stg"
 
       - name: Debug Railway Outputs
         if: always()
@@ -67,9 +67,9 @@ jobs:
             } else {
               body = `${marker}
               ✅ **Backend deployed successfully to Railway**
-              
+
               Environment: \`pr-${prNumber}\`
-              
+
               Check [Railway Dashboard](https://railway.app) to get the deployment URL.
               `;
             }
