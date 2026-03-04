@@ -33,56 +33,22 @@ jobs:
           reuse_preview_environment: "true"
           api_service_name: "backend"
 
-      - name: Debug Railway Outputs
-        if: always()
-        run: |
-          echo "Railway step outcome: ${{ steps.railway.outcome }}"
-          echo "Railway step conclusion: ${{ steps.railway.conclusion }}"
-          echo "Service domain output: '${{ steps.railway.outputs.service_domain }}'"
-          echo "Service domain empty check: ${{ steps.railway.outputs.service_domain == '' }}"
-          echo "All outputs: ${{ toJSON(steps.railway.outputs) }}"
-
       - name: Comment PR with Preview URL
         if: always() && (steps.railway.outcome == 'success' || steps.railway.conclusion == 'success')
         uses: actions/github-script@v7
         with:
           script: |
             const marker = '<!-- railway-preview-backend -->';
-            const shortSha = context.sha.substring(0, 7);
             const serviceDomain = '${{ steps.railway.outputs.service_domain }}';
-            const prNumber = context.issue.number;
-            
+
             let body;
             if (serviceDomain && serviceDomain !== '') {
               body = `${marker}
-              ## 🚀 Backend Preview Deployed Successfully!
-              
-              | Info | Value |
-              |------|-------|
-              | 📍 **Preview URL** | https://${serviceDomain} |
-              | 📦 **Environment** | \`pr-${prNumber}\` |
-              | 🔀 **Branch** | \`${{ github.head_ref }}\` |
-              | 💾 **Commit** | [\`${shortSha}\`](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) |
-              | 👤 **Deployed by** | @${context.actor} |
-              
-              > **Note:** This preview environment uses the staging database. Changes may affect other preview deployments.
+              🚀 **Backend Preview:** https://${serviceDomain}
               `;
             } else {
               body = `${marker}
-              ## 🚀 Backend Preview Deployed Successfully!
-              
-              ✅ Railway deployment completed, but service domain is not available yet.
-              
-              **Please check:**
-              - [Railway Dashboard](https://railway.app) - Navigate to your project to find the deployment URL
-              - [GitHub Actions Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) - Check for any warnings
-              
-              | Info | Value |
-              |------|-------|
-              | 📦 **Environment** | \`pr-${prNumber}\` |
-              | 🔀 **Branch** | \`${{ github.head_ref }}\` |
-              | 💾 **Commit** | [\`${shortSha}\`](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) |
-              | 👤 **Deployed by** | @${context.actor} |
+              ✅ **Backend deployed** - Check [Railway Dashboard](https://railway.app) for URL
               `;
             }
 
@@ -109,78 +75,6 @@ jobs:
                 body
               });
             }
-
-      - name: Comment on Deployment Failure
-        if: always() && (steps.railway.outcome == 'failure' || steps.railway.conclusion == 'failure')
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const marker = '<!-- railway-preview-backend -->';
-            const body = `${marker}
-            ## ⚠️ Backend Preview Deployment Failed
-            
-            The Railway deployment encountered an error. Please check the [workflow logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
-            
-            **Common issues:**
-            - Railway API rate limit exceeded
-            - Invalid Railway API token or Project ID
-            - Network connectivity issues
-            - Service configuration errors
-            
-            **Commit:** [\`${context.sha.substring(0, 7)}\`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
-            `;
-
-            const { data: comments } = await github.rest.issues.listComments({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo
-            });
-
-            const existingComment = comments.find(c => c.body.includes(marker));
-
-            if (existingComment) {
-              await github.rest.issues.updateComment({
-                comment_id: existingComment.id,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body
-              });
-            } else {
-              await github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body
-              });
-            }
-
-      - name: Fallback Comment (Debug)
-        if: always() && steps.railway.outcome != 'success' && steps.railway.conclusion != 'success' && steps.railway.outcome != 'failure' && steps.railway.conclusion != 'failure'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const marker = '<!-- railway-preview-backend -->';
-            const body = `${marker}
-            ## 🔍 Railway Preview Deployment - Status Unknown
-            
-            The Railway deployment step completed, but the outcome is unclear.
-            
-            **Debug Information:**
-            - **Outcome:** \`${{ steps.railway.outcome }}\`
-            - **Conclusion:** \`${{ steps.railway.conclusion }}\`
-            - **Service Domain:** \`${{ steps.railway.outputs.service_domain }}\`
-            
-            **Please check:**
-            - [GitHub Actions Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            - [Railway Dashboard](https://railway.app)
-            `;
-            
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body
-            });
 
   cleanup:
     if: ${{ github.event.pull_request.merged == true || github.event.action == 'closed' }}
