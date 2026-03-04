@@ -26,6 +26,7 @@ jobs:
 
       - name: Deploy to Railway Preview
         id: railway
+        continue-on-error: true
         uses: ayungavis/railway-preview-deploy@v1.0.2
         with:
           railway_api_token: ${{ secrets.RAILWAY_API_TOKEN }}
@@ -35,6 +36,13 @@ jobs:
           branch_name: ${{ github.head_ref }}
           reuse_preview_environment: "true"
           api_service_name: "backend"
+
+      - name: Debug Railway Outputs
+        if: always()
+        run: |
+          echo "Railway outcome: ${{ steps.railway.outcome }}"
+          echo "Service domain: '${{ steps.railway.outputs.service_domain }}'"
+          echo "All outputs: ${{ toJSON(steps.railway.outputs) }}"
 
       - name: Post or update deployment comment
         if: ${{ always() && steps.railway.outputs.service_domain != '' }}
