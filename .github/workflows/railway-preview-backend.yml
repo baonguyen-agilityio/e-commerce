@@ -37,7 +37,7 @@ jobs:
           api_service_name: "backend"
 
       - name: Post or update deployment comment
-        if: ${{ steps.railway.outputs.service_domain != '' }}
+        if: ${{ always() && steps.railway.outputs.service_domain != '' }}
         uses: actions/github-script@v7
         with:
           script: |
